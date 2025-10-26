@@ -80,15 +80,23 @@ jobs:
           echo "=== Starting Android Preview Build ==="
           echo "Build timestamp: $(date)"
           echo "Working directory: $(pwd)"
-          eas build --platform android --profile preview || (echo "Build failed with exit code $?" && exit 1)
-          echo "=== Android build completed ==="
+          # Use CI environment variable to disable prompts
+          export CI=true
+          # Generate keystore response (auto-accept defaults)
+          echo "yes" | eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
+          echo "=== Android build completed ===" 
 
       - name: Build preview for iOS
         working-directory: ./mobile
-        if: github.event.inputs.build_type == 'preview' && github.event_name == 'workflow_dispatch'
+        if: github.event.inputs.build_type == 'preview'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform ios --profile preview
+        run: |
+          echo "=== Starting iOS Preview Build ==="
+          echo "Build timestamp: $(date)"
+          export CI=true
+          eas build --platform ios --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
+          echo "=== iOS build completed ===" 
 
       - name: Build production for Android
         working-directory: ./mobile
