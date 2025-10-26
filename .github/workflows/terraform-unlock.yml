@@ -1,0 +1,47 @@
+name: Terraform Force Unlock
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_WORKING_DIR: infra/terraform
+
+jobs:
+  unlock:
+    name: Force Unlock
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Force Unlock State
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform force-unlock -force 63010652-29d0-8f87-1218-f344ff9d1fb0
+        continue-on-error: true
+
+      - name: Delete DynamoDB Lock Item
+        run: |
+          aws dynamodb delete-item \
+            --table-name clubapp-dev-tfstate-lock \
+            --key '{"LockID":{"S":"clubapp-dev-tfstate/terraform.tfstate"}}'
+        continue-on-error: true
