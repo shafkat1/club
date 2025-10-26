@@ -34,7 +34,7 @@
     "@nestjs/swagger": "^7.1.16",
     "@nestjs/throttler": "^5.1.2",
     "@nestjs/typeorm": "^10.0.1",
-    "@nestjs/websockets": "^11.1.7",
+    "@nestjs/websockets": "^10.4.20",
     "@prisma/client": "^5.8.0",
     "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^7.99.0",
