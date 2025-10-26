@@ -67,7 +67,7 @@ jobs:
 
       - name: Build preview for iOS
         working-directory: ./mobile
-        if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
+        if: github.event.inputs.build_type == 'preview' && github.event_name == 'workflow_dispatch'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform ios --profile preview --non-interactive
