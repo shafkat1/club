@@ -25,11 +25,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   constructor(private jwtService: JwtService) {}
 
-  afterInit(server: Server) {
+  afterInit(_server: Server) {
     this.logger.log('WebSocket gateway initialized');
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  handleConnection(client: Socket, ..._args: any[]) {
     try {
       const token = client.handshake.auth.token;
       if (!token) {
@@ -119,7 +119,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   @SubscribeMessage('venue:counts')
   handleVenueCountsUpdate(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody() data: { venueId: string; buysCount: number; receivesCount: number; totalCount: number },
   ) {
     // Broadcast updated counts to all users in venue
@@ -139,7 +139,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   // ============================================
   @SubscribeMessage('order:created')
   handleOrderCreated(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody()
     data: {
       orderId: string;
@@ -165,7 +165,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   @SubscribeMessage('order:status-updated')
   handleOrderStatusUpdated(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody() data: { orderId: string; buyerId: string; recipientId: string; status: string },
   ) {
     // Notify both buyer and recipient of status change
@@ -189,7 +189,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   // ============================================
   @SubscribeMessage('redemption:ready')
   handleRedemptionReady(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody() data: { redemptionId: string; orderId: string; recipientId: string; qrCode: string },
   ) {
     // Notify recipient that QR code is ready to scan
@@ -205,7 +205,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   @SubscribeMessage('redemption:completed')
   handleRedemptionCompleted(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody() data: { redemptionId: string; orderId: string; recipientId: string },
   ) {
     // Notify recipient of successful redemption

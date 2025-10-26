@@ -61,6 +61,7 @@ export class UsersService {
 
         // Upload to S3
         profileImageUrl = await this.s3.upload(
+          process.env.S3_BUCKET || 'club-app',
           `profile-images/${userId}/${Date.now()}.jpg`,
           buffer,
           'image/jpeg',

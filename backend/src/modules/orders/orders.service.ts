@@ -243,7 +243,7 @@ export class OrdersService {
     }
 
     // Update redemption
-    const updated = await this.prisma.redemption.update({
+    await this.prisma.redemption.update({
       where: { id: redemptionId },
       data: {
         status: 'REDEEMED',
