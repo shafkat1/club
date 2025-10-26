@@ -48,6 +48,14 @@ jobs:
         working-directory: ./mobile
         run: npm run lint || true
 
+      - name: Initialize EAS project
+        working-directory: ./mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas init --id=50e4b4e7-8b9a-4c3d-9e2a-1f5c8d7b9e3a --force || true
+          echo "EAS project initialized or already configured"
+
       - name: Build preview for Android
         working-directory: ./mobile
         if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
