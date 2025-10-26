@@ -36,7 +36,11 @@ export default function ScanPage() {
     startScanning()
 
     return () => {
-      codeReader.current?.reset()
+      // Cleanup will happen automatically when component unmounts
+      if (codeReader.current) {
+        // Browser scanner stops when video element is no longer in DOM
+        setScanning(false)
+      }
     }
   }, [])
 
