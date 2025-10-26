@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useFonts } from 'expo-font'
+// import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { Stack, useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
@@ -16,18 +16,17 @@ Notifications.setNotificationHandler({
 })
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    'Geist-Regular': require('@/assets/fonts/Geist-Regular.ttf'),
-    'Geist-SemiBold': require('@/assets/fonts/Geist-SemiBold.ttf'),
-  })
+  // TODO: Add custom fonts (Geist-Regular, Geist-SemiBold) when ready
+  // const [fontsLoaded, fontError] = useFonts({
+  //   'Geist-Regular': require('@/assets/fonts/Geist-Regular.ttf'),
+  //   'Geist-SemiBold': require('@/assets/fonts/Geist-SemiBold.ttf'),
+  // })
 
   const router = useRouter()
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync()
-    }
-  }, [fontsLoaded, fontError])
+    SplashScreen.hideAsync()
+  }, [])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -41,10 +40,6 @@ export default function RootLayout() {
 
     checkAuth()
   }, [])
-
-  if (!fontsLoaded && !fontError) {
-    return null
-  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
