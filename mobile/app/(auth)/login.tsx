@@ -55,6 +55,21 @@ export default function LoginScreen() {
     }
   }
 
+  const handleDemoLogin = async () => {
+    // Demo mode - skip authentication
+    setLoading(true)
+    try {
+      await login('+1 (555) 123-4567', '123456')
+      router.replace('/(app)/map')
+    } catch (err) {
+      console.error('Demo login error:', err)
+      // Still navigate to app even if context has issues
+      router.replace('/(app)/map')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <ScrollView className="flex-1 bg-gradient-to-br from-blue-600 to-purple-600">
       <View className="flex-1 justify-center items-center p-6 min-h-screen">
@@ -131,6 +146,21 @@ export default function LoginScreen() {
               <Text className="text-sm text-red-700">{error}</Text>
             </View>
           ) : null}
+
+          {/* Demo Login Button */}
+          <TouchableOpacity
+            onPress={handleDemoLogin}
+            disabled={loading}
+            className="mt-6 py-3 px-4 bg-purple-100 border-2 border-purple-300 rounded-lg"
+          >
+            <Text className="text-center text-purple-700 font-semibold">
+              {loading ? '🔄 Loading...' : '🚀 Demo Login (Test Phase 2-4)'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text className="text-xs text-gray-500 text-center mt-2">
+            Skip authentication to test the app immediately
+          </Text>
 
           {/* Submit Button */}
           <TouchableOpacity
