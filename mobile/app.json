@@ -56,9 +56,8 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      },
-      "mapboxPublicToken": "YOUR_MAPBOX_PUBLIC_TOKEN"
+        "projectId": "abc123def456"
+      }
     },
     "updates": {
       "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID",

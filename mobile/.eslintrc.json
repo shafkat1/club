@@ -1,0 +1,23 @@
+{
+  "extends": ["expo", "eslint:recommended"],
+  "env": {
+    "node": true,
+    "es2020": true,
+    "react-native/react-native": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["react", "react-native", "react-hooks"],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/no-unstable-nested-components": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
+  }
+}
