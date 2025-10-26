@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
         )}
 
         <View style={styles.content}>
-          <View style={styles.header}>
+          <View style={styles.headerStyles}>
             <Text style={styles.senderName}>{item.senderName}</Text>
             <Text style={styles.timeAgo}>{timeAgo}</Text>
           </View>
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  header: {
+  headerStyles: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
