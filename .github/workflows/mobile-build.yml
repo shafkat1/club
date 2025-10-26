@@ -71,6 +71,49 @@ jobs:
           echo "=== Environment Info ==="
           eas --version || echo "EAS version check failed"
 
+      - name: Setup Java for keytool
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate temporary Android keystore for CI
+        working-directory: ./mobile
+        run: |
+          echo "=== Generating temporary Android keystore for CI ==="
+          STORE_PASSWORD=$(openssl rand -hex 16)
+          KEY_PASSWORD=$(openssl rand -hex 16)
+          KEY_ALIAS=upload
+          echo "STORE_PASSWORD length: ${#STORE_PASSWORD}"
+          echo "KEY_PASSWORD length: ${#KEY_PASSWORD}"
+          keytool -genkeypair -v \
+            -keystore android-upload-key.jks \
+            -storetype JKS \
+            -storepass "$STORE_PASSWORD" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias "$KEY_ALIAS" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "CN=Club App, OU=Dev, O=Club, L=City, S=State, C=US"
+
+          # Export for potential use and create credentials.json for EAS local credentials
+          echo "EXPO_ANDROID_KEYSTORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
+          echo "EXPO_ANDROID_KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+          echo "EXPO_ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
+
+          cat > credentials.json <<EOF
+          {
+            "android": {
+              "keystore": {
+                "keystorePath": "android-upload-key.jks",
+                "keystorePassword": "$STORE_PASSWORD",
+                "keyAlias": "$KEY_ALIAS",
+                "keyPassword": "$KEY_PASSWORD"
+              }
+            }
+          }
+          EOF
+          echo "credentials.json created for EAS local credentials"
+
       - name: Build preview for Android
         working-directory: ./mobile
         if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
@@ -80,10 +123,8 @@ jobs:
           echo "=== Starting Android Preview Build ==="
           echo "Build timestamp: $(date)"
           echo "Working directory: $(pwd)"
-          # Use CI environment variable to disable prompts
           export CI=true
-          # Generate keystore response (auto-accept defaults)
-          echo "yes" | eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
+          eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
           echo "=== Android build completed ===" 
 
       - name: Build production for Android
