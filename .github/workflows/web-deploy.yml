@@ -11,7 +11,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  S3_BUCKET: clubapp-dev-web-assets
+  S3_BUCKET: clubapp-dev-assets
   CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
   NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
