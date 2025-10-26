@@ -25,11 +25,15 @@ function RootLayoutContent() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        router.replace('/(app)/map')
-      } else {
-        router.replace('/(auth)/login')
-      }
+      // Small delay to ensure Stack is mounted before routing
+      const timer = setTimeout(() => {
+        if (isAuthenticated) {
+          router.replace('/(app)/map')
+        } else {
+          router.replace('/(auth)/login')
+        }
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [isLoading, isAuthenticated])
 
