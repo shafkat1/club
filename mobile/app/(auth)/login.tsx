@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { authAPI } from '@/lib/api'
-import { setAuthToken, setRefreshToken, setUser } from '@/lib/auth'
+import { useUser } from '@/lib/userContext'
 
 export default function LoginScreen() {
   const router = useRouter()
+  const { login } = useUser()
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
@@ -13,6 +14,11 @@ export default function LoginScreen() {
   const [error, setError] = useState('')
 
   const handleSendOtp = async () => {
+    if (!phone.trim()) {
+      setError('Please enter a valid phone number')
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -20,27 +26,30 @@ export default function LoginScreen() {
       await authAPI.sendOtp(phone)
       setStep('otp')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP')
+      console.error('Send OTP error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Failed to send OTP'
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
   const handleVerifyOtp = async () => {
+    if (!otp.trim() || otp.length < 4) {
+      setError('Please enter a valid code')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
-      const response = await authAPI.verifyOtp(phone, otp)
-      const { accessToken, refreshToken, user } = response.data
-
-      setAuthToken(accessToken)
-      setRefreshToken(refreshToken)
-      setUser(user)
-
+      await login(phone, otp)
       router.replace('/(app)/map')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid OTP')
+      console.error('Verify OTP error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Invalid OTP. Please try again.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -52,7 +61,7 @@ export default function LoginScreen() {
         <View className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
           <Text className="text-3xl font-bold text-center text-gray-900 mb-2">
-            Club App
+            🍹 Club
           </Text>
           <Text className="text-center text-gray-600 mb-8">
             Find drinks & connect with friends
@@ -72,9 +81,10 @@ export default function LoginScreen() {
                   keyboardType="phone-pad"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base"
                   editable={!loading}
+                  placeholderTextColor="#9CA3AF"
                 />
                 <Text className="text-xs text-gray-500 mt-1">
-                  We'll send you a verification code
+                  We'll send you a verification code via SMS
                 </Text>
               </View>
             </View>
@@ -92,6 +102,7 @@ export default function LoginScreen() {
                   maxLength={6}
                   className="w-full px-4 py-3 text-center text-2xl tracking-widest border border-gray-300 rounded-lg font-mono"
                   editable={!loading}
+                  placeholderTextColor="#9CA3AF"
                 />
                 <Text className="text-xs text-gray-500 mt-1 text-center">
                   Enter the 6-digit code sent to {phone}
@@ -99,7 +110,11 @@ export default function LoginScreen() {
               </View>
 
               <TouchableOpacity
-                onPress={() => setStep('phone')}
+                onPress={() => {
+                  setStep('phone')
+                  setError('')
+                  setOtp('')
+                }}
                 disabled={loading}
                 className="py-2"
               >
@@ -124,7 +139,7 @@ export default function LoginScreen() {
             className={`w-full py-3 px-4 rounded-lg mt-6 flex-row justify-center items-center ${
               loading || (step === 'phone' ? !phone : !otp)
                 ? 'bg-gray-400'
-                : 'bg-blue-600'
+                : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
             {loading ? (
@@ -138,7 +153,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <Text className="text-center text-xs text-gray-500 mt-6">
-            We take your privacy seriously
+            We take your privacy seriously. Your data is encrypted.
           </Text>
         </View>
       </View>

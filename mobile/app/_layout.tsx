@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
 import { Stack, useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
-import { getAuthToken } from '@/lib/auth'
+import { UserProvider, useUser } from '@/lib/userContext'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -15,36 +15,41 @@ Notifications.setNotificationHandler({
   }),
 })
 
-export default function RootLayout() {
-  // TODO: Add custom fonts (Geist-Regular, Geist-SemiBold) when ready
-  // const [fontsLoaded, fontError] = useFonts({
-  //   'Geist-Regular': require('@/assets/fonts/Geist-Regular.ttf'),
-  //   'Geist-SemiBold': require('@/assets/fonts/Geist-SemiBold.ttf'),
-  // })
-
+function RootLayoutContent() {
   const router = useRouter()
+  const { isAuthenticated, isLoading } = useUser()
 
   useEffect(() => {
     SplashScreen.hideAsync()
   }, [])
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = await getAuthToken()
-      if (!token) {
-        router.replace('/(auth)/login')
-      } else {
+    if (!isLoading) {
+      if (isAuthenticated) {
         router.replace('/(app)/map')
+      } else {
+        router.replace('/(auth)/login')
       }
     }
+  }, [isLoading, isAuthenticated])
 
-    checkAuth()
-  }, [])
+  // Show nothing while loading
+  if (isLoading) {
+    return null
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ animationEnabled: false }} />
       <Stack.Screen name="(app)" options={{ animationEnabled: false }} />
     </Stack>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <UserProvider>
+      <RootLayoutContent />
+    </UserProvider>
   )
 }
