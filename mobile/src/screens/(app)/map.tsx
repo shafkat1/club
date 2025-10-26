@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, SafeAreaView } from 'react-native'
-import MapboxGL from '@rnmapbox/maps'
+// import MapboxGL from '@rnmapbox/maps'
+// TODO: Re-add MapboxGL when Mapbox token is configured
 import { useLocalSearchParams, useRouter } from 'expo-router'
 
 interface Venue {
@@ -95,41 +96,9 @@ export default function MapScreen() {
 
       {/* Map */}
       <View style={styles.mapContainer}>
-        <MapboxGL.MapView
-          style={styles.map}
-          styleURL={`mapbox://styles/mapbox/${mapStyle}-v11`}
-          zoomLevel={14}
-          centerCoordinate={[userLocation.lng, userLocation.lat]}
-        >
-          {/* User Location */}
-          <MapboxGL.Camera
-            zoomLevel={14}
-            centerCoordinate={[userLocation.lng, userLocation.lat]}
-            animationMode="flyTo"
-            animationDuration={200}
-          />
-
-          {/* Venue Markers */}
-          {venues.map((venue) => (
-            <MapboxGL.PointAnnotation
-              key={venue.id}
-              id={venue.id}
-              coordinate={[venue.longitude, venue.latitude]}
-              onSelected={() => handleVenuePress(venue)}
-            >
-              <View
-                style={[
-                  styles.marker,
-                  selectedVenue?.id === venue.id && styles.markerSelected,
-                ]}
-              >
-                <Text style={styles.markerText}>
-                  {venue.buyersCount + venue.receiversCount}
-                </Text>
-              </View>
-            </MapboxGL.PointAnnotation>
-          ))}
-        </MapboxGL.MapView>
+        <View style={styles.map}>
+          <Text>Map Placeholder</Text>
+        </View>
       </View>
 
       {/* Venues List / Selected Venue Info */}
@@ -230,6 +199,8 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   marker: {
     width: 50,
