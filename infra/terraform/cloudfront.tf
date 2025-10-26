@@ -44,5 +44,5 @@ resource "aws_cloudfront_distribution" "assets" {
     ssl_support_method             = var.enable_domain ? "sni-only" : null
   }
 
-  depends_on = var.enable_domain ? [aws_acm_certificate_validation.cloudfront] : [aws_s3_bucket.assets]
+  depends_on = [aws_s3_bucket.assets]
 }

@@ -70,5 +70,5 @@ resource "aws_ecs_service" "placeholder" {
     container_port   = 3000
   }
 
-  depends_on = var.enable_domain ? [] : [aws_lb_listener.http]
+  depends_on = [aws_lb_target_group.app]
 }
