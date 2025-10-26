@@ -50,6 +50,7 @@ jobs:
             -var "project=${{ vars.PROJECT || 'clubapp' }}" \
             -var "environment=dev" \
             -var "aws_region=${{ vars.AWS_REGION || 'us-east-1' }}" \
+            -var "enable_domain=false" \
             -out tfplan
 
       - name: Upload plan
