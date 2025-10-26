@@ -1,6 +1,6 @@
 resource "random_password" "rds_master" {
   length  = 24
-  special = true
+  special = false
 }
 
 resource "aws_db_subnet_group" "rds" {

@@ -1,4 +1,5 @@
 resource "aws_lb_listener" "https" {
+  count             = var.enable_domain ? 1 : 0
   load_balancer_arn = aws_lb.app.arn
   port              = 443
   protocol          = "HTTPS"
@@ -12,6 +13,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener" "http_redirect" {
+  count             = var.enable_domain ? 1 : 0
   load_balancer_arn = aws_lb.app.arn
   port              = 80
   protocol          = "HTTP"

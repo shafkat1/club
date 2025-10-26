@@ -22,6 +22,7 @@ resource "aws_lb_target_group" "app" {
 }
 
 resource "aws_lb_listener" "http" {
+  count             = var.enable_domain ? 0 : 1
   load_balancer_arn = aws_lb.app.arn
   port              = 80
   protocol          = "HTTP"
@@ -69,5 +70,5 @@ resource "aws_ecs_service" "placeholder" {
     container_port   = 3000
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = var.enable_domain ? [] : [aws_lb_listener.http]
 }

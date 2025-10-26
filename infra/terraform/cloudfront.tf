@@ -38,11 +38,11 @@ resource "aws_cloudfront_distribution" "assets" {
   }
 
   viewer_certificate {
-    acm_certificate_arn            = aws_acm_certificate.cloudfront.arn
-    cloudfront_default_certificate = false
-    minimum_protocol_version       = "TLSv1.2_2021"
-    ssl_support_method             = "sni-only"
+    cloudfront_default_certificate = var.enable_domain ? false : true
+    acm_certificate_arn            = var.enable_domain ? aws_acm_certificate.cloudfront.arn : null
+    minimum_protocol_version       = var.enable_domain ? "TLSv1.2_2021" : "TLSv1"
+    ssl_support_method             = var.enable_domain ? "sni-only" : null
   }
 
-  depends_on = [aws_s3_bucket.assets]
+  depends_on = var.enable_domain ? [aws_acm_certificate_validation.cloudfront] : [aws_s3_bucket.assets]
 }
