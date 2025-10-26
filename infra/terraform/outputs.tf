@@ -6,3 +6,4 @@ output "rds_endpoint" { value = aws_db_instance.postgres.address }
 output "redis_primary_endpoint" { value = aws_elasticache_replication_group.redis.primary_endpoint_address }
 output "s3_assets_bucket" { value = aws_s3_bucket.assets.bucket }
 output "cloudfront_assets_domain" { value = aws_cloudfront_distribution.assets.domain_name }
+output "cloudfront_distribution_id" { value = aws_cloudfront_distribution.assets.id }
