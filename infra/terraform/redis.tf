@@ -34,7 +34,7 @@ resource "aws_elasticache_replication_group" "redis" {
   replication_group_id          = "${local.name_prefix}-redis"
   description                   = "Redis for presence, caching, queues"
   node_type                     = "cache.t4g.small"
-  number_cache_clusters         = 2
+  num_cache_clusters            = 2
   automatic_failover_enabled    = true
   multi_az_enabled              = true
   engine                        = "redis"

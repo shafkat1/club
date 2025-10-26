@@ -57,13 +57,21 @@ output "acm_validation_cnames" {
   value = {
     assets = {
       domain = local.assets_domain
-      name   = aws_acm_certificate.cloudfront.domain_validation_options[0].resource_record_name
-      value  = aws_acm_certificate.cloudfront.domain_validation_options[0].resource_record_value
+      records = [
+        for dvo in aws_acm_certificate.cloudfront.domain_validation_options : {
+          name  = dvo.resource_record_name
+          value = dvo.resource_record_value
+        }
+      ]
     }
     api = {
       domain = local.api_domain
-      name   = aws_acm_certificate.alb.domain_validation_options[0].resource_record_name
-      value  = aws_acm_certificate.alb.domain_validation_options[0].resource_record_value
+      records = [
+        for dvo in aws_acm_certificate.alb.domain_validation_options : {
+          name  = dvo.resource_record_name
+          value = dvo.resource_record_value
+        }
+      ]
     }
   }
   description = "ACM validation CNAMEs to add to GoDaddy DNS"

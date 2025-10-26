@@ -51,6 +51,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     id     = "expire-3y"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = 1095
     }
