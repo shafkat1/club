@@ -1,0 +1,270 @@
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
+import { router } from 'expo-router';
+import axios from 'axios';
+import { useGroupStore } from '../../../store/groupStore';
+
+interface User {
+  id: string;
+  name: string;
+  phone: string;
+  avatar?: string;
+  drinkPreference?: string;
+  isInterestedInDrink: boolean;
+}
+
+interface DrinkOrder {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'cancelled';
+  createdAt: string;
+}
+
+export default function BuyDrinkScreen() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { currentGroup, currentUser } = useGroupStore();
+
+  useEffect(() => {
+    if (currentGroup) {
+      fetchGroupUsers();
+    }
+  }, [currentGroup]);
+
+  const fetchGroupUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(`/api/groups/${currentGroup?.id}/users`);
+      // Filter out current user
+      const filtered = response.data.filter((u: User) => u.id !== currentUser?.id);
+      setUsers(filtered);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBuyDrink = async (user: User) => {
+    try {
+      setSelectedUser(user);
+      // Navigate to payment/confirmation screen
+      router.push({
+        pathname: '/(app)/buy-drink/confirm',
+        params: { userId: user.id, userName: user.name }
+      });
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to initiate purchase');
+    }
+  };
+
+  const renderUserItem = ({ item }: { item: User }) => (
+    <View style={styles.userCard}>
+      {item.avatar ? (
+        <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
+      ) : (
+        <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+          <Text style={styles.avatarInitial}>
+            {item.name.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.userInfo}>
+        <Text style={styles.userName}>{item.name}</Text>
+        <Text style={styles.userPhone}>{item.phone}</Text>
+        {item.drinkPreference && (
+          <Text style={styles.drinkPreference}>🍺 {item.drinkPreference}</Text>
+        )}
+        {item.isInterestedInDrink && (
+          <View style={styles.interestBadge}>
+            <Text style={styles.interestText}>Interested in a drink</Text>
+          </View>
+        )}
+      </View>
+
+      <TouchableOpacity 
+        style={styles.buyButton}
+        onPress={() => handleBuyDrink(item)}
+      >
+        <Text style={styles.buyButtonText}>Buy</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={styles.loadingText}>Loading members...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Buy a Drink</Text>
+        <Text style={styles.subtitle}>{currentGroup?.name || 'Select Group'}</Text>
+      </View>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {users.length === 0 ? (
+        <View style={styles.centerContent}>
+          <Text style={styles.emptyText}>No users available</Text>
+          <Text style={styles.emptySubtext}>Join a group or invite friends</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={users}
+          renderItem={renderUserItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshing={loading}
+          onRefresh={fetchGroupUsers}
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+  },
+  avatarPlaceholder: {
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  userPhone: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  drinkPreference: {
+    fontSize: 12,
+    color: '#7c3aed',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  interestBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  interestText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  buyButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  buyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingVertical: 8,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  errorContainer: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 12,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ef4444',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
