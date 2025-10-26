@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: mobile/package-lock.json
+          cache-dependency-path: mobile/package.json
 
       - name: Setup Expo CLI
         run: npm install -g eas-cli
