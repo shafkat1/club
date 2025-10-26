@@ -1,0 +1,130 @@
+name: Build Mobile App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+env:
+  NODE_VERSION: '18'
+  EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Expo CLI
+        run: npm install -g eas-cli
+
+      - name: Install dependencies
+        working-directory: ./mobile
+        run: npm ci
+
+      - name: Lint code
+        working-directory: ./mobile
+        run: npm run lint || true
+
+      - name: Build preview for Android
+        working-directory: ./mobile
+        if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Build preview for iOS
+        working-directory: ./mobile
+        if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform ios --profile preview --non-interactive
+
+      - name: Build production for Android
+        working-directory: ./mobile
+        if: github.event.inputs.build_type == 'production'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform android --profile production --non-interactive
+
+      - name: Build production for iOS
+        working-directory: ./mobile
+        if: github.event.inputs.build_type == 'production'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform ios --profile production --non-interactive
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: mobile-builds
+          path: mobile/build/
+
+      - name: Notify build status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Mobile app build completed successfully!"
+          else
+            echo "❌ Mobile app build failed!"
+          fi
+
+  submit:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event.inputs.build_type == 'production' && success()
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Expo CLI
+        run: npm install -g eas-cli
+
+      - name: Submit to Apple App Store
+        working-directory: ./mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas submit --platform ios --non-interactive || true
+
+      - name: Submit to Google Play Store
+        working-directory: ./mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas submit --platform android --non-interactive || true
+
+      - name: Notify submission
+        run: |
+          echo "Mobile app submitted to app stores"

@@ -1,0 +1,89 @@
+name: Deploy Web Portal
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-deploy.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  S3_BUCKET: clubapp-dev-web-assets
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./web
+        run: npm ci
+
+      - name: Build Next.js app
+        working-directory: ./web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        working-directory: ./web
+        run: |
+          aws s3 sync out/ s3://${{ env.S3_BUCKET }}/web/ \
+            --delete \
+            --cache-control "max-age=31536000,immutable" \
+            --exclude "*.html" && \
+          aws s3 sync out/ s3://${{ env.S3_BUCKET }}/web/ \
+            --cache-control "max-age=0,no-cache,no-store,must-revalidate" \
+            --include "*.html"
+
+      - name: Invalidate CloudFront cache
+        if: success()
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Upload coverage to S3
+        if: always()
+        working-directory: ./web
+        run: |
+          if [ -d "coverage" ]; then
+            aws s3 sync coverage/ s3://${{ env.S3_BUCKET }}/coverage/web/
+          fi
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Web portal deployed successfully!"
+          echo "S3 Bucket: ${{ env.S3_BUCKET }}"
+          echo "Distribution: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Web portal deployment failed!"
+          exit 1
