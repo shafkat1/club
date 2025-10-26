@@ -54,16 +54,34 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "Setting up EAS configuration..."
+          echo "EXPO_TOKEN is set: $(if [ -n '${{ secrets.EXPO_TOKEN }}' ]; then echo 'YES'; else echo 'NO'; fi)"
           # Run eas init with force flag to accept defaults
           eas init --force || true
           echo "EAS setup complete"
+          
+      - name: Validate EAS configuration
+        working-directory: ./mobile
+        run: |
+          echo "=== EAS Configuration Status ==="
+          echo "eas.json exists: $(if [ -f eas.json ]; then echo 'YES'; else echo 'NO'; fi)"
+          if [ -f eas.json ]; then
+            cat eas.json | grep -E '(preview|distribution|buildType)'
+          fi
+          echo "app.json exists: $(if [ -f app.json ]; then echo 'YES'; else echo 'NO'; fi)"
+          echo "=== Environment Info ==="
+          eas --version || echo "EAS version check failed"
 
       - name: Build preview for Android
         working-directory: ./mobile
         if: github.event_name == 'push' || github.event.inputs.build_type == 'preview'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile preview --non-interactive
+        run: |
+          echo "=== Starting Android Preview Build ==="
+          echo "Build timestamp: $(date)"
+          echo "Working directory: $(pwd)"
+          eas build --platform android --profile preview --non-interactive --verbose || (echo "Build failed with exit code $?" && exit 1)
+          echo "=== Android build completed ==="
 
       - name: Build preview for iOS
         working-directory: ./mobile
