@@ -86,31 +86,12 @@ jobs:
           echo "yes" | eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
           echo "=== Android build completed ===" 
 
-      - name: Build preview for iOS
-        working-directory: ./mobile
-        if: github.event.inputs.build_type == 'preview'
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "=== Starting iOS Preview Build ==="
-          echo "Build timestamp: $(date)"
-          export CI=true
-          eas build --platform ios --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
-          echo "=== iOS build completed ===" 
-
       - name: Build production for Android
         working-directory: ./mobile
         if: github.event.inputs.build_type == 'production'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --profile production --non-interactive
-
-      - name: Build production for iOS
-        working-directory: ./mobile
-        if: github.event.inputs.build_type == 'production'
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform ios --profile production --non-interactive
 
       - name: Notify build status
         if: always()
