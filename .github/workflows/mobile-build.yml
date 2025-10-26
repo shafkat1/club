@@ -54,9 +54,9 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "Setting up EAS configuration..."
-          # Create a valid app.json with EAS config if needed
-          npx --yes expo@latest prebuild --clean || true
-          eas init --force --non-interactive || true
+          # Skip prebuild to avoid asset file issues in CI
+          # eas init will auto-generate project if needed
+          eas init --force --non-interactive --skip-git-check || true
           echo "EAS setup complete"
 
       - name: Build preview for Android
