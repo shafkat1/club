@@ -3,7 +3,7 @@
   "env": {
     "node": true,
     "es2020": true,
-    "react-native/react-native": true
+    "browser": true
   },
   "parserOptions": {
     "ecmaVersion": 2020,

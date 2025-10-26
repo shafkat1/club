@@ -14,18 +14,5 @@
       "autoIncrement": true,
       "resourceClass": "default"
     }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "your-apple-id@example.com",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID",
-        "ascAppId": "YOUR_ASC_APP_ID"
-      },
-      "android": {
-        "serviceAccount": "your-google-play-service-account.json",
-        "track": "production"
-      }
-    }
   }
 }
