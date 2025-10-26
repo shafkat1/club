@@ -53,9 +53,11 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo "Initializing EAS project..."
-          yes | eas init || true
-          echo "EAS project initialized"
+          echo "Setting up EAS configuration..."
+          # Create a valid app.json with EAS config if needed
+          npx --yes expo@latest prebuild --clean || true
+          eas init --force --non-interactive || true
+          echo "EAS setup complete"
 
       - name: Build preview for Android
         working-directory: ./mobile
