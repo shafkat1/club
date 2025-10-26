@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { authAPI } from '@/lib/api'
 import { useUser } from '@/lib/userContext'
@@ -56,37 +56,56 @@ export default function LoginScreen() {
   }
 
   const handleDemoLogin = async () => {
-    // Demo mode - skip authentication
     setLoading(true)
     try {
       await login('+1 (555) 123-4567', '123456')
       router.replace('/(app)/map')
     } catch (err) {
       console.error('Demo login error:', err)
-      // Still navigate to app even if context has issues
       router.replace('/(app)/map')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleSignUp = () => {
+    router.push('/(auth)/signup')
+  }
+
   return (
-    <ScrollView className="flex-1 bg-gradient-to-br from-blue-600 to-purple-600">
-      <View className="flex-1 justify-center items-center p-6 min-h-screen">
-        <View className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-          {/* Header */}
-          <Text className="text-3xl font-bold text-center text-gray-900 mb-2">
-            🍹 Club
-          </Text>
-          <Text className="text-center text-gray-600 mb-8">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f3ff' }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 }}>
+        {/* Header */}
+        <View style={{ alignItems: 'center', marginBottom: 40 }}>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>🍹</Text>
+          <Text style={{ fontSize: 28, fontWeight: '700', color: '#111827', marginBottom: 8 }}>Club</Text>
+          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 4 }}>
             Find drinks & connect with friends
           </Text>
+          {step === 'otp' && (
+            <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+              We sent a code to {phone}
+            </Text>
+          )}
+        </View>
 
-          {/* Form */}
+        {/* Form Card */}
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 20,
+          padding: 28,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 5,
+          marginBottom: 24,
+        }}>
           {step === 'phone' ? (
-            <View className="space-y-4">
-              <View>
-                <Text className="text-sm font-medium text-gray-700 mb-2">
+            <View>
+              {/* Phone Input */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
                   Phone Number
                 </Text>
                 <TextInput
@@ -94,19 +113,59 @@ export default function LoginScreen() {
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base"
                   editable={!loading}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#d1d5db"
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    fontSize: 16,
+                    color: '#111827',
+                    backgroundColor: '#f9fafb',
+                  }}
                 />
-                <Text className="text-xs text-gray-500 mt-1">
-                  We'll send you a verification code via SMS
-                </Text>
               </View>
+
+              {/* Error */}
+              {error ? (
+                <View style={{ backgroundColor: '#fee2e2', borderRadius: 10, padding: 12, marginBottom: 20 }}>
+                  <Text style={{ color: '#dc2626', fontSize: 13 }}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Send Code Button */}
+              <TouchableOpacity
+                onPress={handleSendOtp}
+                disabled={loading}
+                style={{
+                  backgroundColor: '#7c3aed',
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  marginBottom: 16,
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                  {loading ? '⏳ Sending...' : 'Send Code'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Sign Up Link */}
+              <TouchableOpacity onPress={handleSignUp} disabled={loading}>
+                <Text style={{ color: '#6b7280', fontSize: 14, textAlign: 'center' }}>
+                  Don't have an account?{' '}
+                  <Text style={{ color: '#7c3aed', fontWeight: '700' }}>Sign Up</Text>
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
-            <View className="space-y-4">
-              <View>
-                <Text className="text-sm font-medium text-gray-700 mb-2">
+            <View>
+              {/* OTP Input */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
                   Verification Code
                 </Text>
                 <TextInput
@@ -115,15 +174,51 @@ export default function LoginScreen() {
                   onChangeText={(text) => setOtp(text.replace(/\D/g, '').slice(0, 6))}
                   keyboardType="number-pad"
                   maxLength={6}
-                  className="w-full px-4 py-3 text-center text-2xl tracking-widest border border-gray-300 rounded-lg font-mono"
                   editable={!loading}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#d1d5db"
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    fontSize: 24,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                    letterSpacing: 8,
+                    color: '#111827',
+                    backgroundColor: '#f9fafb',
+                    fontFamily: 'monospace',
+                  }}
                 />
-                <Text className="text-xs text-gray-500 mt-1 text-center">
-                  Enter the 6-digit code sent to {phone}
-                </Text>
               </View>
 
+              {/* Error */}
+              {error ? (
+                <View style={{ backgroundColor: '#fee2e2', borderRadius: 10, padding: 12, marginBottom: 20 }}>
+                  <Text style={{ color: '#dc2626', fontSize: 13 }}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Verify Button */}
+              <TouchableOpacity
+                onPress={handleVerifyOtp}
+                disabled={loading}
+                style={{
+                  backgroundColor: '#7c3aed',
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  marginBottom: 16,
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                  {loading ? '⏳ Verifying...' : 'Verify & Login'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Back Link */}
               <TouchableOpacity
                 onPress={() => {
                   setStep('phone')
@@ -131,62 +226,48 @@ export default function LoginScreen() {
                   setOtp('')
                 }}
                 disabled={loading}
-                className="py-2"
               >
-                <Text className="text-sm text-blue-600 font-medium text-center">
-                  Use a different phone number
+                <Text style={{ color: '#6b7280', fontSize: 14, textAlign: 'center' }}>
+                  <Text style={{ color: '#7c3aed', fontWeight: '700' }}>← </Text>
+                  Use different number
                 </Text>
               </TouchableOpacity>
             </View>
           )}
-
-          {/* Error Message */}
-          {error ? (
-            <View className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
-              <Text className="text-sm text-red-700">{error}</Text>
-            </View>
-          ) : null}
-
-          {/* Demo Login Button */}
-          <TouchableOpacity
-            onPress={handleDemoLogin}
-            disabled={loading}
-            className="mt-6 py-3 px-4 bg-purple-100 border-2 border-purple-300 rounded-lg"
-          >
-            <Text className="text-center text-purple-700 font-semibold">
-              {loading ? '🔄 Loading...' : '🚀 Demo Login (Test Phase 2-4)'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text className="text-xs text-gray-500 text-center mt-2">
-            Skip authentication to test the app immediately
-          </Text>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            onPress={step === 'phone' ? handleSendOtp : handleVerifyOtp}
-            disabled={loading || (step === 'phone' ? !phone : !otp)}
-            className={`w-full py-3 px-4 rounded-lg mt-6 flex-row justify-center items-center ${
-              loading || (step === 'phone' ? !phone : !otp)
-                ? 'bg-gray-400'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-semibold text-center">
-                {step === 'phone' ? 'Send Code' : 'Verify & Login'}
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Footer */}
-          <Text className="text-center text-xs text-gray-500 mt-6">
-            We take your privacy seriously. Your data is encrypted.
-          </Text>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Demo Login Button */}
+        <TouchableOpacity
+          onPress={handleDemoLogin}
+          disabled={loading}
+          style={{
+            borderWidth: 2,
+            borderColor: '#7c3aed',
+            paddingVertical: 13,
+            borderRadius: 12,
+            alignItems: 'center',
+            marginBottom: 20,
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          <Text style={{ color: '#7c3aed', fontWeight: '700', fontSize: 15 }}>
+            {loading ? '🔄 Loading...' : '🚀 Demo Login'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Social Links */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+          <TouchableOpacity style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 20 }}>f</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 20 }}>🐦</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 20 }}>in</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
