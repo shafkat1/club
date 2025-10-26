@@ -48,8 +48,3 @@ resource "aws_elasticache_replication_group" "redis" {
 
   tags = { Name = "${local.name_prefix}-redis" }
 }
-
-output "redis_primary_endpoint" {
-  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
-  description = "Redis primary endpoint"
-}

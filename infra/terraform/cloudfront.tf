@@ -46,8 +46,3 @@ resource "aws_cloudfront_distribution" "assets" {
 
   depends_on = [aws_s3_bucket.assets]
 }
-
-output "cloudfront_assets_domain" {
-  value       = aws_cloudfront_distribution.assets.domain_name
-  description = "CloudFront domain for assets"
-}

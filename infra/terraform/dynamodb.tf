@@ -4,10 +4,20 @@ resource "aws_dynamodb_table" "presence" {
   hash_key       = "userId"
   range_key      = "venueId"
 
-  attribute { name = "userId"  type = "S" }
-  attribute { name = "venueId" type = "S" }
+  attribute {
+    name = "userId"
+    type = "S"
+  }
 
-  ttl { attribute_name = "ttl" enabled = true }
+  attribute {
+    name = "venueId"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
 
   global_secondary_index {
     name            = "venue-index"
@@ -23,7 +33,10 @@ resource "aws_dynamodb_table" "venue_counts" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "venueId"
 
-  attribute { name = "venueId" type = "S" }
+  attribute {
+    name = "venueId"
+    type = "S"
+  }
 
   tags = { Name = "${local.name_prefix}-venue-counts" }
 }
@@ -33,8 +46,15 @@ resource "aws_dynamodb_table" "idempotency" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "key"
 
-  attribute { name = "key" type = "S" }
-  ttl { attribute_name = "ttl" enabled = true }
+  attribute {
+    name = "key"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
 
   tags = { Name = "${local.name_prefix}-idempotency" }
 }
@@ -44,7 +64,10 @@ resource "aws_dynamodb_table" "devices" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "deviceId"
 
-  attribute { name = "deviceId" type = "S" }
+  attribute {
+    name = "deviceId"
+    type = "S"
+  }
 
   tags = { Name = "${local.name_prefix}-devices" }
 }

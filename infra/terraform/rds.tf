@@ -43,13 +43,3 @@ resource "aws_db_instance" "postgres" {
 
   tags = { Name = "${local.name_prefix}-postgres" }
 }
-
-output "rds_endpoint" {
-  value       = aws_db_instance.postgres.address
-  description = "RDS endpoint hostname"
-}
-
-output "rds_username" {
-  value       = aws_db_instance.postgres.username
-  description = "RDS username"
-}

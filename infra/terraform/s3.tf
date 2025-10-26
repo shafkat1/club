@@ -56,8 +56,3 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     }
   }
 }
-
-output "s3_assets_bucket" {
-  value       = aws_s3_bucket.assets.bucket
-  description = "Assets bucket name"
-}
