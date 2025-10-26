@@ -80,7 +80,7 @@ jobs:
           echo "=== Starting Android Preview Build ==="
           echo "Build timestamp: $(date)"
           echo "Working directory: $(pwd)"
-          eas build --platform android --profile preview --non-interactive --verbose || (echo "Build failed with exit code $?" && exit 1)
+          eas build --platform android --profile preview --non-interactive || (echo "Build failed with exit code $?" && exit 1)
           echo "=== Android build completed ==="
 
       - name: Build preview for iOS
