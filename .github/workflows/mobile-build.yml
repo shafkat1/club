@@ -36,8 +36,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: mobile/package.json
 
       - name: Setup Expo CLI
         run: npm install -g eas-cli
@@ -78,18 +76,12 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform ios --profile production --non-interactive
 
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-builds
-          path: mobile/build/
-
       - name: Notify build status
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "✅ Mobile app build completed successfully!"
+            echo "Builds are managed by Expo EAS and available in your Expo dashboard"
           else
             echo "❌ Mobile app build failed!"
           fi
