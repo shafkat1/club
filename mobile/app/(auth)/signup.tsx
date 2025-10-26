@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useUser } from '@/lib/userContext'
+
+type SignupMethod = 'email' | 'phone'
 
 export default function SignupScreen() {
   const router = useRouter()
+  const { login } = useUser()
+  const [signupMethod, setSignupMethod] = useState<SignupMethod>('email')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,14 +24,27 @@ export default function SignupScreen() {
       setError('Please enter your name')
       return false
     }
-    if (!email.trim()) {
-      setError('Please enter your email')
-      return false
+    
+    if (signupMethod === 'email') {
+      if (!email.trim()) {
+        setError('Please enter your email')
+        return false
+      }
+      if (!email.includes('@')) {
+        setError('Please enter a valid email')
+        return false
+      }
+    } else {
+      if (!phone.trim()) {
+        setError('Please enter your phone number')
+        return false
+      }
+      if (phone.length < 10) {
+        setError('Please enter a valid phone number')
+        return false
+      }
     }
-    if (!email.includes('@')) {
-      setError('Please enter a valid email')
-      return false
-    }
+    
     if (!password || password.length < 6) {
       setError('Password must be at least 6 characters')
       return false
@@ -45,12 +64,28 @@ export default function SignupScreen() {
 
     setLoading(true)
     try {
-      // For now, just navigate to login
-      // In real app, you would call authAPI.signup()
-      Alert.alert('Success', 'Account created! Please log in with your credentials.', [
+      // Create demo user account
+      const identifier = signupMethod === 'email' ? email : phone
+      
+      // Show success message
+      Alert.alert('Success', `Account created! Welcome to Club, ${name}!`, [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: async () => {
+            try {
+              // Auto-login with demo credentials
+              if (signupMethod === 'email') {
+                await login(email, password)
+              } else {
+                // For phone signup, use OTP demo (123456)
+                await login(phone, '123456')
+              }
+              router.replace('/')
+            } catch (err) {
+              console.error('Auto-login error:', err)
+              router.back()
+            }
+          },
         },
       ])
     } catch (err: any) {
@@ -75,6 +110,47 @@ export default function SignupScreen() {
           <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
             Join the Club community
           </Text>
+        </View>
+
+        {/* Signup Method Toggle */}
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={() => setSignupMethod('email')}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              borderRadius: 12,
+              alignItems: 'center',
+              backgroundColor: signupMethod === 'email' ? '#7c3aed' : '#e5e7eb',
+            }}
+          >
+            <Text style={{
+              color: signupMethod === 'email' ? '#fff' : '#6b7280',
+              fontWeight: '600',
+              fontSize: 14,
+            }}>
+              Email
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={() => setSignupMethod('phone')}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              borderRadius: 12,
+              alignItems: 'center',
+              backgroundColor: signupMethod === 'phone' ? '#7c3aed' : '#e5e7eb',
+            }}
+          >
+            <Text style={{
+              color: signupMethod === 'phone' ? '#fff' : '#6b7280',
+              fontWeight: '600',
+              fontSize: 14,
+            }}>
+              Phone
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Form Card */}
@@ -113,31 +189,57 @@ export default function SignupScreen() {
             />
           </View>
 
-          {/* Email Input */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
-              Email
-            </Text>
-            <TextInput
-              placeholder="john@example.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!loading}
-              placeholderTextColor="#d1d5db"
-              style={{
-                borderWidth: 1.5,
-                borderColor: '#e5e7eb',
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontSize: 16,
-                color: '#111827',
-                backgroundColor: '#f9fafb',
-              }}
-            />
-          </View>
+          {/* Email or Phone Input */}
+          {signupMethod === 'email' ? (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
+                Email
+              </Text>
+              <TextInput
+                placeholder="john@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading}
+                placeholderTextColor="#d1d5db"
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: '#e5e7eb',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  fontSize: 16,
+                  color: '#111827',
+                  backgroundColor: '#f9fafb',
+                }}
+              />
+            </View>
+          ) : (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
+                Phone Number
+              </Text>
+              <TextInput
+                placeholder="+1 (555) 123-4567"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                editable={!loading}
+                placeholderTextColor="#d1d5db"
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: '#e5e7eb',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  fontSize: 16,
+                  color: '#111827',
+                  backgroundColor: '#f9fafb',
+                }}
+              />
+            </View>
+          )}
 
           {/* Password Input */}
           <View style={{ marginBottom: 20 }}>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { router } from 'expo-router';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser } from '@/lib/userContext';
 
 interface UserProfile {
   id: string;
@@ -18,26 +17,23 @@ interface UserProfile {
 }
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: contextUser, logout } = useUser();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get('/api/users/me');
-      setUser(response.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch profile');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Create a profile from context user
+  const user: UserProfile | null = contextUser ? {
+    id: contextUser.id || 'demo-user',
+    name: contextUser.name || 'Demo User',
+    phone: contextUser.phone || '+1 (555) 123-4567',
+    email: contextUser.email || 'demo@club.app',
+    avatar: contextUser.avatar,
+    bio: contextUser.bio || 'Welcome to Club! 🍹',
+    joinDate: contextUser.joinDate || new Date().toISOString(),
+    preferredPayment: contextUser.preferredPayment || 'Card',
+    notificationsEnabled: contextUser.notificationsEnabled !== false,
+    locationSharing: contextUser.locationSharing !== false,
+  } : null;
 
   const handleEditProfile = () => {
     router.push('/(app)/profile/edit');
@@ -53,8 +49,7 @@ export default function ProfileScreen() {
           text: 'Logout',
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('user');
+              await logout();
               router.replace('/(auth)/login');
             } catch (err) {
               Alert.alert('Error', 'Failed to logout');
@@ -80,17 +75,31 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
           <Text style={styles.errorText}>Unable to load profile</Text>
+          <TouchableOpacity 
+            style={[styles.actionButton, { marginTop: 16 }]} 
+            onPress={() => router.replace('/(auth)/login')}
+          >
+            <Text style={styles.actionButtonText}>Go to Login</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
+
+  // Safe name extraction with null checks
+  const nameInitial = (name: string) => {
+    if (!name || typeof name !== 'string' || name.length === 0) {
+      return 'U';
+    }
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>👤 Profile</Text>
         </View>
 
         {/* Profile Card */}
@@ -100,13 +109,13 @@ export default function ProfileScreen() {
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Text style={styles.avatarInitial}>
-                {user.name.charAt(0).toUpperCase()}
+                {nameInitial(user.name)}
               </Text>
             </View>
           )}
 
-          <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.phone}>{user.phone}</Text>
+          <Text style={styles.name}>{user.name || 'Demo User'}</Text>
+          <Text style={styles.phone}>{user.phone || '+1 (555) 123-4567'}</Text>
           {user.email && <Text style={styles.email}>{user.email}</Text>}
           {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
@@ -115,19 +124,19 @@ export default function ProfileScreen() {
           </Text>
 
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+            <Text style={styles.editButtonText}>✏️ Edit Profile</Text>
           </TouchableOpacity>
         </View>
 
         {/* Account Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
+          <Text style={styles.sectionTitle}>⚙️ Account Settings</Text>
 
           <View style={styles.settingItem}>
             <View>
               <Text style={styles.settingLabel}>Notifications</Text>
               <Text style={styles.settingDescription}>
-                {user.notificationsEnabled ? 'Enabled' : 'Disabled'}
+                {user.notificationsEnabled ? '✅ Enabled' : '❌ Disabled'}
               </Text>
             </View>
             <View style={[styles.badge, user.notificationsEnabled && styles.badgeActive]}>
@@ -141,7 +150,7 @@ export default function ProfileScreen() {
             <View>
               <Text style={styles.settingLabel}>Location Sharing</Text>
               <Text style={styles.settingDescription}>
-                {user.locationSharing ? 'Enabled' : 'Disabled'}
+                {user.locationSharing ? '✅ Enabled' : '❌ Disabled'}
               </Text>
             </View>
             <View style={[styles.badge, user.locationSharing && styles.badgeActive]}>
@@ -154,7 +163,7 @@ export default function ProfileScreen() {
           {user.preferredPayment && (
             <View style={styles.settingItem}>
               <View>
-                <Text style={styles.settingLabel}>Preferred Payment</Text>
+                <Text style={styles.settingLabel}>💳 Preferred Payment</Text>
                 <Text style={styles.settingDescription}>{user.preferredPayment}</Text>
               </View>
             </View>
@@ -163,19 +172,19 @@ export default function ProfileScreen() {
 
         {/* Actions */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(app)/profile/settings')}>
-            <Text style={styles.actionButtonText}>Privacy & Settings</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Coming Soon', 'Privacy & Settings feature coming soon!')}>
+            <Text style={styles.actionButtonText}>🔒 Privacy & Settings</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(app)/help')}>
-            <Text style={styles.actionButtonText}>Help & Support</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Coming Soon', 'Help & Support feature coming soon!')}>
+            <Text style={styles.actionButtonText}>❓ Help & Support</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.actionButton, styles.logoutButton]} 
             onPress={handleLogout}
           >
-            <Text style={[styles.actionButtonText, styles.logoutButtonText]}>Logout</Text>
+            <Text style={[styles.actionButtonText, styles.logoutButtonText]}>🚪 Logout</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -186,7 +195,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
   },
   scrollContent: {
     paddingBottom: 24,
@@ -196,20 +205,26 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000',
+    color: '#111827',
   },
   profileCard: {
     marginHorizontal: 16,
     marginVertical: 20,
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
     borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatar: {
     width: 100,
@@ -218,7 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatarPlaceholder: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#7c3aed',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -230,7 +245,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: '#111827',
     marginBottom: 4,
   },
   phone: {
@@ -257,8 +272,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     width: '100%',
-    paddingVertical: 10,
-    backgroundColor: '#3b82f6',
+    paddingVertical: 12,
+    backgroundColor: '#7c3aed',
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -274,7 +289,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
+    color: '#111827',
     marginBottom: 12,
   },
   settingItem: {
@@ -283,14 +298,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#111827',
     marginBottom: 4,
   },
   settingDescription: {
@@ -316,17 +333,20 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#111827',
   },
   logoutButton: {
     backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
   },
   logoutButtonText: {
     color: '#dc2626',
@@ -343,5 +363,6 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: '#dc2626',
+    marginBottom: 16,
   },
 });

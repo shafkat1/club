@@ -31,7 +31,7 @@ export class AuthService {
     const redisKey = `otp:phone:${dto.phone}`;
     
     // Store OTP in Redis with 10 minute expiry
-    await this.redis.set(redisKey, code, 'EX', 600);
+    await this.redis.set(redisKey, code, 600);
 
     // Send SMS via Twilio
     if (this.twilioClient) {
@@ -138,7 +138,6 @@ export class AuthService {
     await this.redis.set(
       `refresh_token:${user.id}`,
       refreshToken,
-      'EX',
       7 * 24 * 60 * 60, // 7 days
     );
 

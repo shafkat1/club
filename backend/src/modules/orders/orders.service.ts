@@ -76,7 +76,6 @@ export class OrdersService {
     await this.redis.set(
       `order:${order.id}`,
       JSON.stringify(order),
-      'EX',
       86400, // 24 hours
     );
 
@@ -185,7 +184,7 @@ export class OrdersService {
     const response = this.mapOrderToResponse(order);
 
     // Cache it
-    await this.redis.set(`order:${orderId}`, JSON.stringify(response), 'EX', 86400);
+    await this.redis.set(`order:${orderId}`, JSON.stringify(response), 86400);
 
     return response;
   }

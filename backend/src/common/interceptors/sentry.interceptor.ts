@@ -13,7 +13,7 @@ import * as Sentry from '@sentry/node';
 export class SentryInterceptor implements NestInterceptor {
   private logger = new Logger('SentryInterceptor');
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(_context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((error) => {
         if (process.env.SENTRY_DSN) {

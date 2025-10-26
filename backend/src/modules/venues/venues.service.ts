@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../common/services/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
 import { SearchVenuesDto, VenueListResponseDto, VenueDetailsResponseDto, SetPresenceDto, PresenceResponseDto } from '../../common/dtos/venue.dto';
+import axios from 'axios';
 
 @Injectable()
 export class VenuesService {
@@ -9,6 +10,111 @@ export class VenuesService {
     private prisma: PrismaService,
     private redis: RedisService,
   ) {}
+
+  // ============================================
+  // GOOGLE PLACES API INTEGRATION (NEW)
+  // ============================================
+  async getNearbyVenuesFromGooglePlaces(
+    latitude: number,
+    longitude: number,
+    type: string = 'restaurant',
+    radius: number = 8047,
+  ) {
+    try {
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        throw new Error('GOOGLE_MAPS_API_KEY not configured');
+      }
+
+      // Call Google Places API
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+        {
+          params: {
+            location: `${latitude},${longitude}`,
+            radius: radius,
+            type: type,
+            key: apiKey,
+          },
+        }
+      );
+
+      if (!response.data.results) {
+        return [];
+      }
+
+      // Map results to standard format
+      return response.data.results.map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        type: type,
+        address: place.vicinity || place.formatted_address || 'N/A',
+        latitude: place.geometry.location.lat,
+        longitude: place.geometry.location.lng,
+        rating: place.rating,
+        reviewCount: place.user_ratings_total,
+        openNow: place.opening_hours?.open_now,
+        phone: place.formatted_phone_number,
+        website: place.website,
+        photos: place.photos?.map((p: any) => p.photo_reference) || [],
+      }));
+    } catch (error) {
+      console.error('Error fetching nearby venues from Google Places:', error);
+      throw new BadRequestException(
+        `Failed to fetch nearby venues: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  async searchGooglePlaces(
+    query: string,
+    latitude: number,
+    longitude: number,
+    radius: number = 8047,
+  ) {
+    try {
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        throw new Error('GOOGLE_MAPS_API_KEY not configured');
+      }
+
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json',
+        {
+          params: {
+            query: query,
+            location: `${latitude},${longitude}`,
+            radius: radius,
+            key: apiKey,
+          },
+        }
+      );
+
+      if (!response.data.results) {
+        return [];
+      }
+
+      return response.data.results.map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        type: 'mixed',
+        address: place.formatted_address || 'N/A',
+        latitude: place.geometry.location.lat,
+        longitude: place.geometry.location.lng,
+        rating: place.rating,
+        reviewCount: place.user_ratings_total,
+        openNow: undefined,
+        phone: place.formatted_phone_number,
+        website: place.website,
+        photos: place.photos?.map((p: any) => p.photo_reference) || [],
+      }));
+    } catch (error) {
+      console.error('Error searching Google Places:', error);
+      throw new BadRequestException(
+        `Failed to search places: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
 
   // ============================================
   // VENUE SEARCH & DISCOVERY
@@ -45,7 +151,7 @@ export class VenuesService {
 
     // Enrich with real-time presence data
     const venuesWithPresence = await Promise.all(
-      venues.map(async (venue: any) => this.enrichVenueWithPresence(venue)),
+      (venues as any[]).map(async (venue: any) => this.enrichVenueWithPresence(venue)),
     );
 
     return venuesWithPresence;
@@ -120,7 +226,6 @@ export class VenuesService {
         wantsToReceive: presence.wantsToReceive,
         lastSeen: new Date(),
       }),
-      'EX',
       86400, // 24 hours
     );
 
@@ -153,7 +258,7 @@ export class VenuesService {
     return { message: 'Presence cleared' };
   }
 
-  async getVenuePresence(venueId: string, userId?: string): Promise<PresenceResponseDto[]> {
+  async getVenuePresence(venueId: string): Promise<PresenceResponseDto[]> {
     const presences = await this.prisma.presence.findMany({
       where: { venueId },
       include: { user: true },
@@ -185,7 +290,6 @@ export class VenuesService {
         receives: receivesCount,
         lastUpdated: new Date(),
       }),
-      'EX',
       3600, // 1 hour
     );
   }
@@ -229,7 +333,6 @@ export class VenuesService {
       latitude: venue.latitude,
       longitude: venue.longitude,
       address: venue.address,
-      city: venue.city,
       coverImage: venue.coverImage,
       distance: Math.round(venue.distance * 100) / 100, // Round to 2 decimals
       presenceCount: counts.total,

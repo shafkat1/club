@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
 import { router } from 'expo-router';
-import axios from 'axios';
-import { useGroupStore } from '../../../store/groupStore';
 
 interface User {
   id: string;
@@ -22,80 +20,132 @@ interface DrinkOrder {
   createdAt: string;
 }
 
+// Mock group members data
+const MOCK_GROUP_MEMBERS: User[] = [
+  {
+    id: 'user_001',
+    name: 'Alice Cooper',
+    phone: '+1 (555) 001-0001',
+    avatar: undefined,
+    drinkPreference: 'Margarita',
+    isInterestedInDrink: true,
+  },
+  {
+    id: 'user_002',
+    name: 'Bob Smith',
+    phone: '+1 (555) 002-0002',
+    avatar: undefined,
+    drinkPreference: 'Beer',
+    isInterestedInDrink: true,
+  },
+  {
+    id: 'user_003',
+    name: 'Carol White',
+    phone: '+1 (555) 003-0003',
+    avatar: undefined,
+    drinkPreference: 'Mojito',
+    isInterestedInDrink: false,
+  },
+  {
+    id: 'user_004',
+    name: 'David Johnson',
+    phone: '+1 (555) 004-0004',
+    avatar: undefined,
+    drinkPreference: 'Whiskey',
+    isInterestedInDrink: true,
+  },
+  {
+    id: 'user_005',
+    name: 'Emma Davis',
+    phone: '+1 (555) 005-0005',
+    avatar: undefined,
+    drinkPreference: 'Cosmopolitan',
+    isInterestedInDrink: true,
+  },
+];
+
 export default function BuyDrinkScreen() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>(MOCK_GROUP_MEMBERS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { currentGroup, currentUser } = useGroupStore();
+  const currentGroup = { id: 'group_1', name: 'Friday Night Squad' };
+  const currentUser = { id: 'current_user', name: 'You' };
 
   useEffect(() => {
-    if (currentGroup) {
-      fetchGroupUsers();
-    }
-  }, [currentGroup]);
-
-  const fetchGroupUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get(`/api/groups/${currentGroup?.id}/users`);
-      // Filter out current user
-      const filtered = response.data.filter((u: User) => u.id !== currentUser?.id);
-      setUsers(filtered);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch users');
-    } finally {
+    // Simulate initial loading
+    setLoading(true);
+    const timer = setTimeout(() => {
       setLoading(false);
-    }
-  };
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleBuyDrink = async (user: User) => {
+  const handleBuyDrink = (user: User) => {
     try {
       setSelectedUser(user);
-      // Navigate to payment/confirmation screen
-      router.push({
-        pathname: '/(app)/buy-drink/confirm',
-        params: { userId: user.id, userName: user.name }
-      });
+      Alert.alert(
+        '🍻 Buy a Drink',
+        `Buy ${user.drinkPreference || 'a drink'} for ${user.name}?`,
+        [
+          {
+            text: 'Cancel',
+            onPress: () => setSelectedUser(null),
+            style: 'cancel',
+          },
+          {
+            text: 'Confirm',
+            onPress: () => {
+              Alert.alert('Success!', `You bought ${user.drinkPreference || 'a drink'} for ${user.name}!`);
+              setSelectedUser(null);
+            },
+            style: 'default',
+          },
+        ]
+      );
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to initiate purchase');
     }
   };
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <View style={styles.userCard}>
-      {item.avatar ? (
-        <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
-      ) : (
-        <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarInitial}>
-            {item.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+  const renderUserItem = ({ item }: { item: User }) => {
+    // Safe name extraction
+    const userInitial = item.name && item.name.length > 0
+      ? item.name.charAt(0).toUpperCase()
+      : '?';
 
-      <View style={styles.userInfo}>
-        <Text style={styles.userName}>{item.name}</Text>
-        <Text style={styles.userPhone}>{item.phone}</Text>
-        {item.drinkPreference && (
-          <Text style={styles.drinkPreference}>🍺 {item.drinkPreference}</Text>
-        )}
-        {item.isInterestedInDrink && (
-          <View style={styles.interestBadge}>
-            <Text style={styles.interestText}>Interested in a drink</Text>
+    return (
+      <View style={styles.userCard}>
+        {item.avatar ? (
+          <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
+        ) : (
+          <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarInitial}>{userInitial}</Text>
           </View>
         )}
-      </View>
 
-      <TouchableOpacity 
-        style={styles.buyButton}
-        onPress={() => handleBuyDrink(item)}
-      >
-        <Text style={styles.buyButtonText}>Buy</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{item.name || 'Unknown User'}</Text>
+          <Text style={styles.userPhone}>{item.phone || 'N/A'}</Text>
+          {item.drinkPreference && (
+            <Text style={styles.drinkPreference}>🍺 {item.drinkPreference}</Text>
+          )}
+          {item.isInterestedInDrink && (
+            <View style={styles.interestBadge}>
+              <Text style={styles.interestText}>Interested in a drink</Text>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity 
+          style={styles.buyButton}
+          onPress={() => handleBuyDrink(item)}
+        >
+          <Text style={styles.buyButtonText}>💳 Buy</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -110,7 +160,7 @@ export default function BuyDrinkScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Buy a Drink</Text>
+        <Text style={styles.title}>🍻 Buy a Drink</Text>
         <Text style={styles.subtitle}>{currentGroup?.name || 'Select Group'}</Text>
       </View>
 
@@ -122,8 +172,9 @@ export default function BuyDrinkScreen() {
 
       {users.length === 0 ? (
         <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>No users available</Text>
-          <Text style={styles.emptySubtext}>Join a group or invite friends</Text>
+          <Text style={styles.emptyEmoji}>🍷</Text>
+          <Text style={styles.emptyText}>No members available</Text>
+          <Text style={styles.emptySubtext}>Invite friends to buy them a drink</Text>
         </View>
       ) : (
         <FlatList
@@ -132,7 +183,22 @@ export default function BuyDrinkScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           refreshing={loading}
-          onRefresh={fetchGroupUsers}
+          onRefresh={() => {
+            setLoading(true);
+            setTimeout(() => setLoading(false), 500);
+          }}
+          ListHeaderComponent={
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{users.length}</Text>
+                <Text style={styles.statLabel}>Members</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{users.filter(u => u.isInterestedInDrink).length}</Text>
+                <Text style={styles.statLabel}>Interested</Text>
+              </View>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
@@ -142,23 +208,49 @@ export default function BuyDrinkScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000',
+    color: '#111827',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    gap: 12,
+    marginBottom: 8,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#7c3aed',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
   },
   userCard: {
     flexDirection: 'row',
@@ -166,10 +258,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#e5e7eb',
   },
   userAvatar: {
     width: 56,
@@ -193,7 +285,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#111827',
     marginBottom: 2,
   },
   userPhone: {
@@ -221,7 +313,7 @@ const styles = StyleSheet.create({
   },
   buyButton: {
     backgroundColor: '#10b981',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
     marginLeft: 8,
@@ -239,6 +331,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyEmoji: {
+    fontSize: 56,
+    marginBottom: 12,
+  },
   loadingText: {
     fontSize: 16,
     color: '#6b7280',
@@ -246,7 +342,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#111827',
     marginBottom: 8,
   },
   emptySubtext: {

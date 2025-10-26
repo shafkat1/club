@@ -10,6 +10,29 @@ export class VenuesController {
   constructor(private readonly venuesService: VenuesService) {}
 
   // ============================================
+  // GOOGLE PLACES API INTEGRATION (NEW)
+  // ============================================
+  @Get('nearby')
+  async getNearbyVenues(
+    @Query('latitude') latitude: number,
+    @Query('longitude') longitude: number,
+    @Query('type') type: string = 'restaurant',
+    @Query('radius') radius: number = 8047,
+  ) {
+    return this.venuesService.getNearbyVenuesFromGooglePlaces(latitude, longitude, type, radius);
+  }
+
+  @Get('search-places')
+  async searchPlaces(
+    @Query('query') query: string,
+    @Query('latitude') latitude: number,
+    @Query('longitude') longitude: number,
+    @Query('radius') radius: number = 8047,
+  ) {
+    return this.venuesService.searchGooglePlaces(query, latitude, longitude, radius);
+  }
+
+  // ============================================
   // SEARCH & DISCOVERY
   // ============================================
   @Post('search')
