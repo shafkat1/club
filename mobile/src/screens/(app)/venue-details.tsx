@@ -1,169 +1,245 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, FlatList, Image } from 'react-native'
+import React, { useState } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  FlatList,
+  Alert,
+} from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { MOCK_VENUES, MOCK_GROUPS } from '@/lib/mockData'
 
-interface User {
+interface Review {
   id: string
-  displayName: string
-  profileImage?: string
-  role: 'buyer' | 'receiver'
+  author: string
+  rating: number
+  comment: string
+  date: string
 }
+
+const MOCK_REVIEWS: Review[] = [
+  {
+    id: '1',
+    author: 'Alex M.',
+    rating: 5,
+    comment: 'Amazing vibes and great service! The cocktails are top-notch.',
+    date: '2 days ago',
+  },
+  {
+    id: '2',
+    author: 'Jordan K.',
+    rating: 4,
+    comment: 'Fun place, music was loud but thats what we came for!',
+    date: '1 week ago',
+  },
+  {
+    id: '3',
+    author: 'Casey L.',
+    rating: 5,
+    comment: 'Perfect spot for a night out. Will definitely come back.',
+    date: '2 weeks ago',
+  },
+]
 
 export default function VenueDetailsScreen() {
   const router = useRouter()
-  const { venueId } = useLocalSearchParams()
-  const [venue, setVenue] = useState<any>(null)
-  const [users, setUsers] = useState<User[]>([])
-  const [filter, setFilter] = useState<'all' | 'buyer' | 'receiver'>('all')
-  const [loading, setLoading] = useState(true)
+  const params = useLocalSearchParams()
+  const venueId = params.venueId as string
 
-  useEffect(() => {
-    loadVenueData()
-  }, [venueId])
+  const venue = MOCK_VENUES.find(v => v.id === venueId)
+  const [isCheckedIn, setIsCheckedIn] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
 
-  const loadVenueData = async () => {
-    setLoading(true)
-    try {
-      // Mock venue data
-      setVenue({
-        id: venueId,
-        name: 'The Club House',
-        address: '123 Main St, New York',
-        phone: '+1 (555) 123-4567',
-        image: '🍹',
-      })
+  if (!venue) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Venue not found</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backButtonText}>← Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
-      // Mock users at venue
-      const mockUsers: User[] = [
-        { id: '1', displayName: 'Sarah', role: 'receiver' },
-        { id: '2', displayName: 'John', role: 'buyer' },
-        { id: '3', displayName: 'Emma', role: 'receiver' },
-        { id: '4', displayName: 'Mike', role: 'buyer' },
-        { id: '5', displayName: 'Lisa', role: 'receiver' },
-      ]
-      setUsers(mockUsers)
-    } catch (error) {
-      console.error('Error loading venue:', error)
-    } finally {
-      setLoading(false)
+  const handleCheckIn = () => {
+    if (selectedGroup) {
+      Alert.alert('Success', `Checked in with ${selectedGroup}`)
+      setIsCheckedIn(true)
+    } else {
+      Alert.alert('Select a Group', 'Please select a group to check in with')
     }
   }
 
-  const filteredUsers = users.filter((user) => {
-    if (filter === 'all') return true
-    return user.role === filter
-  })
-
-  const handleBuyDrink = (user: User) => {
+  const handleSendOrder = () => {
     router.push({
-      pathname: '/buy-drink',
-      params: { userId: user.id, venueId, userName: user.displayName },
+      pathname: '/create-order',
+      params: { venueId: venue.id, venueName: venue.name },
     })
   }
 
-  const handleUserProfile = (user: User) => {
-    router.push({
-      pathname: '/user-profile',
-      params: { userId: user.id },
-    })
-  }
+  const groupEmojis = ['🎉', '🍻', '🎵', '🕺']
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{venue?.name}</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Venue Details</Text>
+          <View style={{ width: 40 }} />
         </View>
-      ) : (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Venue Card */}
-          <View style={styles.venueCard}>
-            <View style={styles.venueImage}>
-              <Text style={styles.venueImageText}>{venue?.image}</Text>
+
+        {/* Venue Hero */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroImage}>
+            <Text style={styles.heroEmoji}>🍺</Text>
+          </View>
+          <View style={styles.heroContent}>
+            <Text style={styles.venueName}>{venue.name}</Text>
+            <View style={styles.venueType}>
+              <Text style={styles.venueTypeText}>{venue.type.toUpperCase()}</Text>
             </View>
-            <View style={styles.venueInfo}>
-              <Text style={styles.venueName}>{venue?.name}</Text>
-              <Text style={styles.venueAddress}>{venue?.address}</Text>
-              <Text style={styles.venuePhone}>{venue?.phone}</Text>
+            <View style={styles.ratingRow}>
+              <Text style={styles.ratingBadge}>⭐ {venue.rating}</Text>
+              <Text style={styles.reviewCount}>({venue.reviewCount} reviews)</Text>
             </View>
           </View>
+        </View>
 
-          {/* Filters */}
-          <View style={styles.filterContainer}>
-            <TouchableOpacity
-              onPress={() => setFilter('all')}
-              style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
-            >
-              <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
-                All ({users.length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setFilter('buyer')}
-              style={[styles.filterButton, filter === 'buyer' && styles.filterButtonActive]}
-            >
-              <Text style={[styles.filterButtonText, filter === 'buyer' && styles.filterButtonTextActive]}>
-                Buying ({users.filter((u) => u.role === 'buyer').length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setFilter('receiver')}
-              style={[styles.filterButton, filter === 'receiver' && styles.filterButtonActive]}
-            >
-              <Text style={[styles.filterButtonText, filter === 'receiver' && styles.filterButtonTextActive]}>
-                Receiving ({users.filter((u) => u.role === 'receiver').length})
-              </Text>
-            </TouchableOpacity>
+        {/* Key Info Cards */}
+        <View style={styles.infoGrid}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>📍 Distance</Text>
+            <Text style={styles.infoValue}>{venue.distance.toFixed(1)} km</Text>
           </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>⏰ Open Now</Text>
+            <Text style={styles.infoValue}>{venue.hours.open}</Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>🎯 Popular</Text>
+            <Text style={styles.infoValue}>{venue.buyersCount + venue.receiversCount}</Text>
+          </View>
+        </View>
 
-          {/* Users Grid */}
-          <View style={styles.usersGrid}>
-            {filteredUsers.map((user) => (
-              <View key={user.id} style={styles.userCard}>
-                <TouchableOpacity
-                  onPress={() => handleUserProfile(user)}
-                  style={styles.userCardHeader}
-                >
-                  <View style={styles.userAvatar}>
-                    <Text style={styles.userAvatarText}>👤</Text>
-                  </View>
-                  <Text style={styles.userName}>{user.displayName}</Text>
-                </TouchableOpacity>
+        {/* Description */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.description}>{venue.description}</Text>
+        </View>
 
-                <View style={styles.userRole}>
-                  <Text style={[styles.roleText, user.role === 'buyer' ? styles.roleBuyer : styles.roleReceiver]}>
-                    {user.role === 'buyer' ? '💰 Buying' : '🍹 Receiving'}
+        {/* Address & Hours */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📍 Location & Hours</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Address:</Text>
+            <Text style={styles.detailValue}>{venue.address}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Hours:</Text>
+            <Text style={styles.detailValue}>
+              {venue.hours.open} - {venue.hours.close}
+            </Text>
+          </View>
+        </View>
+
+        {/* Live Activity */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>👥 Live Activity</Text>
+          <View style={styles.activityContainer}>
+            <View style={styles.activityCard}>
+              <Text style={styles.activityNumber}>{venue.buyersCount}</Text>
+              <Text style={styles.activityLabel}>Looking to Buy</Text>
+            </View>
+            <View style={styles.activityCard}>
+              <Text style={styles.activityNumber}>{venue.receiversCount}</Text>
+              <Text style={styles.activityLabel}>Looking to Receive</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Group Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>👫 Check In With Group</Text>
+          <FlatList
+            data={MOCK_GROUPS}
+            keyExtractor={item => item.id}
+            scrollEnabled={false}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                onPress={() => setSelectedGroup(item.id)}
+                style={[
+                  styles.groupCard,
+                  selectedGroup === item.id && styles.groupCardSelected,
+                ]}
+              >
+                <Text style={styles.groupEmoji}>{groupEmojis[index % groupEmojis.length]}</Text>
+                <View style={styles.groupInfo}>
+                  <Text style={styles.groupName}>{item.name}</Text>
+                  <Text style={styles.groupMembers}>
+                    {item.memberCount} members
                   </Text>
                 </View>
+                <View style={styles.checkmark}>
+                  {selectedGroup === item.id && (
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
 
-                {user.role === 'receiver' && (
-                  <TouchableOpacity
-                    onPress={() => handleBuyDrink(user)}
-                    style={styles.buyButton}
-                  >
-                    <Text style={styles.buyButtonText}>Send Drink 🎁</Text>
-                  </TouchableOpacity>
-                )}
+        {/* Reviews */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>⭐ Reviews</Text>
+          {MOCK_REVIEWS.map(review => (
+            <View key={review.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewAuthor}>{review.author}</Text>
+                <Text style={styles.reviewRating}>{'⭐'.repeat(review.rating)}</Text>
               </View>
-            ))}
-          </View>
-
-          {filteredUsers.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No {filter === 'all' ? 'people' : filter} found</Text>
+              <Text style={styles.reviewComment}>{review.comment}</Text>
+              <Text style={styles.reviewDate}>{review.date}</Text>
             </View>
-          )}
-        </ScrollView>
-      )}
+          ))}
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            onPress={handleCheckIn}
+            style={[
+              styles.actionButton,
+              styles.checkInButtonStyle,
+              isCheckedIn && styles.actionButtonDisabled,
+            ]}
+            disabled={isCheckedIn}
+          >
+            <Text style={styles.actionButtonText}>
+              {isCheckedIn ? '✓ Checked In' : '📍 Check In'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSendOrder}
+            style={[styles.actionButton, styles.orderButtonStyle]}
+          >
+            <Text style={styles.actionButtonText}>🍻 Send Order</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 20 }} />
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -171,7 +247,7 @@ export default function VenueDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f9fafb',
   },
   header: {
     flexDirection: 'row',
@@ -183,174 +259,255 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#3b82f6',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  loadingContainer: {
+  errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
+  errorText: {
     fontSize: 16,
     color: '#6b7280',
+    marginBottom: 16,
   },
-  venueCard: {
+  heroSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
   },
-  venueImage: {
-    height: 120,
-    backgroundColor: '#3b82f6',
+  heroImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  venueImageText: {
-    fontSize: 48,
+  heroEmoji: {
+    fontSize: 80,
   },
-  venueInfo: {
-    padding: 16,
+  heroContent: {
+    gap: 8,
   },
   venueName: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
   },
-  venueAddress: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
+  venueType: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
-  venuePhone: {
-    fontSize: 13,
-    color: '#3b82f6',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  filterButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  filterButtonText: {
+  venueTypeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
-    textAlign: 'center',
+    color: '#1e40af',
   },
-  filterButtonTextActive: {
-    color: '#fff',
-  },
-  usersGrid: {
+  ratingRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  userCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  userCardHeader: {
     alignItems: 'center',
+    gap: 8,
+  },
+  ratingBadge: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#f59e0b',
+  },
+  reviewCount: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
     marginBottom: 12,
   },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#e5e7eb',
-    justifyContent: 'center',
-    alignItems: 'center',
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#6b7280',
+  },
+  detailRow: {
+    flexDirection: 'row',
     marginBottom: 8,
   },
-  userAvatarText: {
-    fontSize: 24,
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginRight: 8,
+    minWidth: 80,
   },
-  userName: {
+  detailValue: {
+    fontSize: 13,
+    color: '#6b7280',
+    flex: 1,
+  },
+  activityContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  activityCard: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activityNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#3b82f6',
+  },
+  activityLabel: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  groupCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  groupCardSelected: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#3b82f6',
+  },
+  groupEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
   },
-  userRole: {
-    marginBottom: 12,
-  },
-  roleText: {
+  groupMembers: {
     fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    color: '#6b7280',
+    marginTop: 2,
   },
-  roleBuyer: {
-    backgroundColor: '#fef3c7',
-    color: '#92400e',
-  },
-  roleReceiver: {
-    backgroundColor: '#dbeafe',
-    color: '#1e40af',
-  },
-  buyButton: {
+  checkmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#3b82f6',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  buyButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyState: {
-    marginTop: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyStateText: {
-    fontSize: 16,
+  checkmarkText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  reviewCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  reviewAuthor: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  reviewRating: {
+    fontSize: 12,
+  },
+  reviewComment: {
+    fontSize: 13,
     color: '#6b7280',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  reviewDate: {
+    fontSize: 11,
+    color: '#9ca3af',
+  },
+  actionContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  checkInButtonStyle: {
+    backgroundColor: '#3b82f6',
+  },
+  orderButtonStyle: {
+    backgroundColor: '#8b5cf6',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  actionButtonDisabled: {
+    backgroundColor: '#d1d5db',
   },
 })
