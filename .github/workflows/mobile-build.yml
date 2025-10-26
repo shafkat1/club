@@ -54,9 +54,8 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "Setting up EAS configuration..."
-          # Skip prebuild to avoid asset file issues in CI
-          # eas init will auto-generate project if needed
-          eas init --force --non-interactive --skip-git-check || true
+          # Run eas init with force flag to accept defaults
+          eas init --force || true
           echo "EAS setup complete"
 
       - name: Build preview for Android
