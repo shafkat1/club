@@ -35,5 +35,5 @@ variable "domain_name" {
 variable "enable_domain" {
   description = "Whether to create Route53 and ACM resources"
   type        = bool
-  default     = true
+  default     = false
 }
