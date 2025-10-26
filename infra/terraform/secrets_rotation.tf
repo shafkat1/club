@@ -20,7 +20,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rds_rotatio
   name           = "${local.name_prefix}-rds-rotation"
   application_id = "arn:aws:serverlessrepo:us-east-1:297356227824:applications/SecretsManagerRDSPostgreSQLRotationSingleUser"
   semantic_version = "1.1.333"
-  capabilities   = ["CAPABILITY_IAM"]
+  capabilities   = ["CAPABILITY_IAM", "CAPABILITY_RESOURCE_POLICY"]
 
   parameters = {
     endpoint                     = aws_db_instance.postgres.address
