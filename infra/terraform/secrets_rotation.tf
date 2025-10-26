@@ -1,5 +1,6 @@
 # Use AWS Serverless Application Repository rotation function
 # App name: SecretsManagerRDSPostgreSQLRotationSingleUser
+# Note: Manual rotation setup can be done via AWS Console after deployment
 
 resource "aws_security_group" "rotation" {
   name        = "${local.name_prefix}-secrets-rotation-sg"
@@ -16,27 +17,14 @@ resource "aws_security_group" "rotation" {
   # Inbound not required; lambda initiates outbound connections
 }
 
-resource "aws_serverlessapplicationrepository_cloudformation_stack" "rds_rotation" {
-  name           = "${local.name_prefix}-rds-rotation"
-  application_id = "arn:aws:serverlessrepo:us-east-1:297356227824:applications/SecretsManagerRDSPostgreSQLRotationSingleUser"
-  semantic_version = "1.1.333"
-  capabilities   = ["CAPABILITY_IAM", "CAPABILITY_RESOURCE_POLICY"]
+# For production, use AWS Secrets Manager rotation via Lambda
+# This can be set up manually in the AWS Console:
+# 1. Go to Secrets Manager → clubapp-dev/rds/postgres/connection
+# 2. Click "Set rotation" → "Enable rotation"
+# 3. Select "SecretsManagerRDSPostgreSQLRotationSingleUser"
+# 4. Configure Lambda execution role and VPC settings
 
-  parameters = {
-    functionName                 = "${local.name_prefix}-rds-rotation-lambda"
-    endpoint                     = aws_db_instance.postgres.address
-    port                         = tostring(aws_db_instance.postgres.port)
-    dbName                       = aws_db_instance.postgres.db_name == null ? "postgres" : aws_db_instance.postgres.db_name
-    tableName                    = ""
-    VpcSubnetIds                 = join(",", [for s in aws_subnet.private : s.id])
-    VpcSecurityGroupIds          = aws_security_group.rotation.id
-    excludeCharacters            = "/@\"\\'`$"
-    rotationSchedule             = "rate(30 days)"
-    masterSecretArn              = aws_secretsmanager_secret.db_password.arn
-  }
-}
-
-# Create composite secret with connection info for rotation
+# Create composite secret with connection info
 resource "aws_secretsmanager_secret" "db_conn" {
   name       = "${local.name_prefix}/rds/postgres/connection"
   kms_key_id = aws_kms_key.main.arn
@@ -52,15 +40,6 @@ resource "aws_secretsmanager_secret_version" "db_conn_v" {
     password = random_password.rds_master.result,
     dbname   = "postgres"
   })
-}
-
-resource "aws_secretsmanager_secret_rotation" "db_conn" {
-  secret_id           = aws_secretsmanager_secret.db_conn.id
-  rotation_lambda_arn = aws_serverlessapplicationrepository_cloudformation_stack.rds_rotation.outputs["FunctionArn"]
-
-  rotation_rules {
-    automatically_after_days = 30
-  }
 }
 
 output "db_secret_arn" {
