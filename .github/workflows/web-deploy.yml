@@ -35,13 +35,13 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./web
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build Next.js app
         working-directory: ./web
         env:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
-        run: npm run build
+        run: npm run build:export
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
