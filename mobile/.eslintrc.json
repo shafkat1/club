@@ -1,5 +1,5 @@
 {
-  "extends": ["expo", "eslint:recommended"],
+  "extends": ["eslint:recommended"],
   "env": {
     "node": true,
     "es2020": true,
@@ -12,12 +12,11 @@
       "jsx": true
     }
   },
-  "plugins": ["react", "react-native", "react-hooks"],
+  "plugins": ["react-hooks"],
   "rules": {
-    "react/react-in-jsx-scope": "off",
-    "react/no-unstable-nested-components": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
-    "no-console": ["warn", { "allow": ["warn", "error"] }]
-  }
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "ignorePatterns": ["node_modules", ".expo", "dist", "build", "*.log"]
 }
