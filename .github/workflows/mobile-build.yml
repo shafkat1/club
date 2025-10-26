@@ -53,8 +53,9 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas init --id=50e4b4e7-8b9a-4c3d-9e2a-1f5c8d7b9e3a --force || true
-          echo "EAS project initialized or already configured"
+          echo "Initializing EAS project..."
+          yes | eas init || true
+          echo "EAS project initialized"
 
       - name: Build preview for Android
         working-directory: ./mobile
