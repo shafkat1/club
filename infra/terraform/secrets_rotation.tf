@@ -23,6 +23,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rds_rotatio
   capabilities   = ["CAPABILITY_IAM", "CAPABILITY_RESOURCE_POLICY"]
 
   parameters = {
+    functionName                 = "${local.name_prefix}-rds-rotation-lambda"
     endpoint                     = aws_db_instance.postgres.address
     port                         = tostring(aws_db_instance.postgres.port)
     dbName                       = aws_db_instance.postgres.db_name == null ? "postgres" : aws_db_instance.postgres.db_name
@@ -32,7 +33,6 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rds_rotatio
     excludeCharacters            = "/@\"\\'`$"
     rotationSchedule             = "rate(30 days)"
     masterSecretArn              = aws_secretsmanager_secret.db_password.arn
-    # createSecretArn will be set after secret is created below
   }
 }
 
