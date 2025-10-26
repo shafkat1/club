@@ -51,6 +51,16 @@
         {
           "cameraPermission": "Allow Club App to access your camera"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://jitpack.io"
+            ]
+          }
+        }
       ]
     ],
     "extra": {
