@@ -13,7 +13,6 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTabletMode": true,
       "bundleIdentifier": "com.clubapp.ios",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to find nearby venues",
@@ -59,9 +58,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID",
-      "enabled": false,
-      "checkOnLaunch": "never",
-      "fallbackToCacheTimeout": 0
+      "enabled": false
     },
     "runtimeVersion": {
       "policy": "appVersion"
