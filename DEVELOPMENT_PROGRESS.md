@@ -35,6 +35,28 @@ This document tracks the development progress of the Club App - a map-first drin
   - Redis-backed session storage
   - Current user profile endpoint
 
+- [x] Venues Module:
+  - Location-based search (Haversine formula)
+  - Real-time venue counts (Redis-cached)
+  - Presence management (set/clear location)
+  - Presence list with drink interests
+  - Venue details with aggregate counts
+
+- [x] Orders Module:
+  - Drink order creation with validation
+  - Stripe payment intent creation
+  - Order status updates (PENDING → PAID → ACCEPTED → REDEEMED)
+  - User order history with filtering
+  - Redemption QR code generation
+  - Order redemption (bartender verification)
+
+- [x] Groups Module:
+  - Create groups (friends hangout)
+  - Add/remove group members (owner only)
+  - Leave group (self)
+  - Set shared group venue
+  - Get user's groups with all members
+
 ## In Progress 🚀
 
 ### Infrastructure
@@ -42,11 +64,8 @@ This document tracks the development progress of the Club App - a map-first drin
 - Will enable domain/DNS after infrastructure is stable
 
 ### Backend (Next Tasks)
-- [ ] Venues Module (search by location, proximity)
-- [ ] Orders Module (create, list, update, payment integration with Stripe)
 - [ ] Redemptions Module (QR code generation, bartender scanning)
 - [ ] Presence Module (real-time user tracking, drink interests)
-- [ ] Groups Module (friend management, shared venue presence)
 - [ ] Payments Module (Stripe integration, Apple Pay, Google Pay)
 - [ ] WebSocket/Realtime Module (Ably or Socket.IO for live updates)
 - [ ] Push Notifications (Firebase Cloud Messaging)
