@@ -41,17 +41,22 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+        run: |
+          echo "🔧 Initializing Terraform..."
+          terraform init
+          echo "✅ Terraform initialized"
 
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+          echo "📋 Planning Terraform changes..."
           terraform plan \
             -var "project=${{ vars.PROJECT || 'clubapp' }}" \
             -var "environment=dev" \
             -var "aws_region=${{ vars.AWS_REGION || 'us-east-1' }}" \
             -var "enable_domain=false" \
             -out tfplan
+          echo "✅ Terraform plan completed"
 
       - name: Upload plan
         uses: actions/upload-artifact@v4
@@ -82,7 +87,10 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+        run: |
+          echo "🔧 Initializing Terraform..."
+          terraform init
+          echo "✅ Terraform initialized"
 
       - name: Download plan
         uses: actions/download-artifact@v4
@@ -92,4 +100,7 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve tfplan
+        run: |
+          echo "🚀 Applying Terraform plan..."
+          terraform apply -auto-approve tfplan
+          echo "✅ Terraform apply completed"

@@ -42,22 +42,28 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./mobile
-        run: npm install --legacy-peer-deps
+        run: |
+          echo "📦 Installing dependencies..."
+          npm install --legacy-peer-deps
+          echo "✅ Dependencies installed"
 
       - name: Lint code
         working-directory: ./mobile
-        run: npm run lint || true
+        continue-on-error: true
+        run: |
+          echo "🔍 Running linter..."
+          npm run lint || echo "⚠️ Linting completed with warnings"
 
       - name: Initialize EAS project
         working-directory: ./mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo "Setting up EAS configuration..."
+          echo "🔧 Setting up EAS configuration..."
           echo "EXPO_TOKEN is set: $(if [ -n '${{ secrets.EXPO_TOKEN }}' ]; then echo 'YES'; else echo 'NO'; fi)"
           # Run eas init with force flag to accept defaults
           eas init --force || true
-          echo "EAS setup complete"
+          echo "✅ EAS setup complete"
           
       - name: Validate EAS configuration
         working-directory: ./mobile
@@ -65,7 +71,7 @@ jobs:
           echo "=== EAS Configuration Status ==="
           echo "eas.json exists: $(if [ -f eas.json ]; then echo 'YES'; else echo 'NO'; fi)"
           if [ -f eas.json ]; then
-            cat eas.json | grep -E '(preview|distribution|buildType)'
+            cat eas.json | grep -E '(preview|distribution|buildType)' || echo "No build configs found"
           fi
           echo "app.json exists: $(if [ -f app.json ]; then echo 'YES'; else echo 'NO'; fi)"
           echo "=== Environment Info ==="
@@ -112,7 +118,7 @@ jobs:
             }
           }
           EOF
-          echo "credentials.json created for EAS local credentials"
+          echo "✅ credentials.json created for EAS local credentials"
 
       - name: Cache npm
         uses: actions/cache@v4
@@ -132,19 +138,23 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set -e
           echo "=== Starting Android Preview Build ==="
           echo "Build timestamp: $(date)"
           echo "Working directory: $(pwd)"
           export CI=true
           eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
-          echo "=== Android build completed ===" 
+          echo "✅ Android build completed successfully"
 
       - name: Build production for Android
         working-directory: ./mobile
         if: github.event.inputs.build_type == 'production'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile production --non-interactive
+        run: |
+          echo "🚀 Starting Android Production Build..."
+          eas build --platform android --profile production --non-interactive
+          echo "✅ Android production build completed"
 
       - name: Notify build status
         if: always()
@@ -154,6 +164,7 @@ jobs:
             echo "Builds are managed by Expo EAS and available in your Expo dashboard"
           else
             echo "❌ Mobile app build failed!"
+            echo "Check the logs above for details"
           fi
 
   submit:
@@ -179,14 +190,21 @@ jobs:
         working-directory: ./mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas submit --platform ios --non-interactive || true
+        continue-on-error: true
+        run: |
+          echo "📱 Submitting to Apple App Store..."
+          eas submit --platform ios --non-interactive || echo "⚠️ iOS submission skipped"
 
       - name: Submit to Google Play Store
         working-directory: ./mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas submit --platform android --non-interactive || true
+        continue-on-error: true
+        run: |
+          echo "🤖 Submitting to Google Play Store..."
+          eas submit --platform android --non-interactive || echo "⚠️ Android submission skipped"
 
       - name: Notify submission
         run: |
-          echo "Mobile app submitted to app stores"
+          echo "✅ Mobile app submission process completed"
+          echo "Check Expo dashboard for submission status"

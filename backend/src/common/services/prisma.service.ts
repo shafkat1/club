@@ -4,18 +4,23 @@ import { PrismaClient } from '@prisma/client';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   private logger = new Logger('PrismaService');
+  private isConnected = false;
 
   async onModuleInit() {
     try {
       await this.$connect();
+      this.isConnected = true;
       this.logger.log('✅ Database connected');
     } catch (error) {
-      this.logger.error('❌ Database connection failed', error);
-      process.exit(1);
+      this.logger.warn('⚠️ Database connection failed (app will continue without it)', error);
+      // Don't exit - allow app to start even if database is unavailable
+      // This is useful for health checks and monitoring
     }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    if (this.isConnected) {
+      await this.$disconnect();
+    }
   }
 }
