@@ -1,0 +1,87 @@
+name: Deploy Backend to ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 425687053209.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: clubapp-backend
+  ECS_SERVICE: clubapp-dev-svc
+  ECS_CLUSTER: clubapp-dev-ecs
+  ECS_TASK_DEFINITION: clubapp-backend-task
+  AWS_DEFAULT_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::425687053209:role/github-actions-apprunner
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Register task definition
+        id: task-def
+        run: |
+          cd backend
+          # Replace the image URI placeholder with the latest image
+          sed -i "s|425687053209.dkr.ecr.us-east-1.amazonaws.com/clubapp-backend:latest|${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest|g" task-definition.json
+          
+          # Register the task definition and get the ARN
+          TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://task-definition.json --region $AWS_REGION)
+          echo "task_def_arn=$(echo $TASK_DEF | jq -r '.taskDefinition.taskDefinitionArn')" >> $GITHUB_OUTPUT
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_SERVICE \
+            --task-definition $ECS_TASK_DEFINITION \
+            --region $AWS_REGION
+
+      - name: Wait for service to be stable
+        run: |
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $ECS_SERVICE \
+            --region $AWS_REGION
+        timeout-minutes: 10
+
+      - name: Get service status
+        if: always()
+        run: |
+          aws ecs describe-services \
+            --cluster $ECS_CLUSTER \
+            --services $ECS_SERVICE \
+            --region $AWS_REGION \
+            --query 'services[0].[status,desiredCount,runningCount]' \
+            --output table
