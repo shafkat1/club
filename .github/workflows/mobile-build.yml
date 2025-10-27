@@ -143,7 +143,7 @@ jobs:
           echo "Build timestamp: $(date)"
           echo "Working directory: $(pwd)"
           export CI=true
-          eas build --platform android --profile preview 2>&1 || (echo "Build failed with exit code $?" && exit 1)
+          eas build --platform android --profile preview --non-interactive 2>&1 || (echo "Build failed with exit code $?" && exit 1)
           echo "✅ Android build completed successfully"
 
       - name: Build production for Android
