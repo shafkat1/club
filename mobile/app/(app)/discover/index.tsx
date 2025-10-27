@@ -14,19 +14,10 @@ interface DiscoverUser {
 
 export default function DiscoverScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState<DiscoverUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<DiscoverUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { currentGroup } = useGroupStore();
-
-  useEffect(() => {
-    if (searchQuery.trim().length > 2) {
-      searchUsers();
-    } else {
-      setFilteredUsers([]);
-    }
-  }, [searchQuery]);
 
   const searchUsers = async () => {
     try {
@@ -40,6 +31,14 @@ export default function DiscoverScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.trim().length > 2) {
+      searchUsers();
+    } else {
+      setFilteredUsers([]);
+    }
+  }, [searchQuery, searchUsers]);
 
   const handleAddFriend = async (user: DiscoverUser) => {
     try {

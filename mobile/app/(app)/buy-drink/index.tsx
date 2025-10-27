@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
-import { router } from 'expo-router';
 
 interface User {
   id: string;
@@ -9,15 +8,6 @@ interface User {
   avatar?: string;
   drinkPreference?: string;
   isInterestedInDrink: boolean;
-}
-
-interface DrinkOrder {
-  id: string;
-  senderId: string;
-  recipientId: string;
-  amount: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  createdAt: string;
 }
 
 // Mock group members data
@@ -68,9 +58,7 @@ export default function BuyDrinkScreen() {
   const [users, setUsers] = useState<User[]>(MOCK_GROUP_MEMBERS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const currentGroup = { id: 'group_1', name: 'Friday Night Squad' };
-  const currentUser = { id: 'current_user', name: 'You' };
 
   useEffect(() => {
     // Simulate initial loading
@@ -83,21 +71,19 @@ export default function BuyDrinkScreen() {
 
   const handleBuyDrink = (user: User) => {
     try {
-      setSelectedUser(user);
       Alert.alert(
         '🍻 Buy a Drink',
         `Buy ${user.drinkPreference || 'a drink'} for ${user.name}?`,
         [
           {
             text: 'Cancel',
-            onPress: () => setSelectedUser(null),
+            onPress: () => {},
             style: 'cancel',
           },
           {
             text: 'Confirm',
             onPress: () => {
               Alert.alert('Success!', `You bought ${user.drinkPreference || 'a drink'} for ${user.name}!`);
-              setSelectedUser(null);
             },
             style: 'default',
           },
