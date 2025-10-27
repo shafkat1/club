@@ -15,6 +15,9 @@ RUN npm ci --legacy-peer-deps
 COPY src ./src
 COPY prisma ./prisma
 
+# Generate Prisma client
+RUN npx prisma generate
+
 # Build application
 RUN npm run build
 
@@ -37,6 +40,7 @@ RUN npm ci --only=production --legacy-peer-deps && npm cache clean --force
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
