@@ -6,7 +6,7 @@
   "memory": "2048",
   "containerDefinitions": [
     {
-      "name": "backend",
+      "name": "web",
       "image": "425687053209.dkr.ecr.us-east-1.amazonaws.com/clubapp-backend:latest",
       "portMappings": [
         {
