@@ -30,7 +30,7 @@
         },
         {
           "name": "DATABASE_URL",
-          "value": "postgresql://app:password@clubapp-dev-postgres.c1jtbcb1z2w1.us-east-1.rds.amazonaws.com:5432/postgres"
+          "value": "postgresql://app:MvbuAtwhxli9ZmAetz1Y1GaT@clubapp-dev-postgres.c1jtbcb1z2w1.us-east-1.rds.amazonaws.com:5432/postgres"
         }
       ],
       "logConfiguration": {
