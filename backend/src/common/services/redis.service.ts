@@ -3,14 +3,36 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService {
-  private client: Redis;
+  private client: Redis | null = null;
   private logger = new Logger('RedisService');
+  private isConnected = false;
 
   constructor() {
-    const redisUrl = this.buildRedisUrl();
-    this.client = new Redis(redisUrl);
-    this.client.on('error', (err) => this.logger.error('Redis error', err));
-    this.client.on('connect', () => this.logger.log('✅ Redis connected'));
+    this.initializeRedis();
+  }
+
+  private async initializeRedis() {
+    try {
+      const redisUrl = this.buildRedisUrl();
+      this.client = new Redis(redisUrl);
+      
+      this.client.on('error', (err) => {
+        this.logger.error('Redis error', err);
+        this.isConnected = false;
+      });
+      
+      this.client.on('connect', () => {
+        this.logger.log('✅ Redis connected');
+        this.isConnected = true;
+      });
+
+      // Test connection
+      await this.client.ping();
+    } catch (error) {
+      this.logger.warn('⚠️ Redis connection failed (app will continue without it)', error);
+      this.client = null;
+      this.isConnected = false;
+    }
   }
 
   private buildRedisUrl(): string {
@@ -26,15 +48,23 @@ export class RedisService {
     return `${protocol}://${password}${host}:${port}`;
   }
 
-  getClient(): Redis {
+  getClient(): Redis | null {
     return this.client;
   }
 
   async get(key: string): Promise<string | null> {
+    if (!this.client || !this.isConnected) {
+      this.logger.warn('Redis not available, returning null for get');
+      return null;
+    }
     return this.client.get(key);
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
+    if (!this.client || !this.isConnected) {
+      this.logger.warn('Redis not available, skipping set operation');
+      return;
+    }
     if (ttl) {
       await this.client.setex(key, ttl, value);
     } else {
@@ -43,18 +73,32 @@ export class RedisService {
   }
 
   async del(key: string): Promise<void> {
+    if (!this.client || !this.isConnected) {
+      this.logger.warn('Redis not available, skipping del operation');
+      return;
+    }
     await this.client.del(key);
   }
 
   async incr(key: string): Promise<number> {
+    if (!this.client || !this.isConnected) {
+      this.logger.warn('Redis not available, returning 0 for incr');
+      return 0;
+    }
     return this.client.incr(key);
   }
 
   async expire(key: string, ttl: number): Promise<void> {
+    if (!this.client || !this.isConnected) {
+      this.logger.warn('Redis not available, skipping expire operation');
+      return;
+    }
     await this.client.expire(key, ttl);
   }
 
   async quit(): Promise<void> {
-    await this.client.quit();
+    if (this.client) {
+      await this.client.quit();
+    }
   }
 }
