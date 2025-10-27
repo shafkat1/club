@@ -22,7 +22,8 @@ export class RedemptionsService {
     // Create redemption record
     const redemption = await this.prisma.redemption.create({
       data: {
-        orderId: dto.orderId,
+        bartenderId: dto.bartenderId,
+        qrCode: dto.qrCode,
         status: 'PENDING',
       },
     });
@@ -33,7 +34,7 @@ export class RedemptionsService {
   async getRedemption(redemptionId: string) {
     const redemption = await this.prisma.redemption.findUnique({
       where: { id: redemptionId },
-      include: { order: true },
+      include: { orders: true },
     });
 
     if (!redemption) {

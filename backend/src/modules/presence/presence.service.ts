@@ -19,13 +19,19 @@ export class PresenceService {
         },
       },
       update: {
-        type: dto.type,
-        updatedAt: new Date(),
+        wantsToBuy: dto.wantsToBuy || false,
+        wantsToReceive: dto.wantsToReceive || false,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        lastSeen: new Date(),
       },
       create: {
         userId,
         venueId: dto.venueId,
-        type: dto.type,
+        wantsToBuy: dto.wantsToBuy || false,
+        wantsToReceive: dto.wantsToReceive || false,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
       },
     });
 

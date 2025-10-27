@@ -100,7 +100,7 @@ export class AuthService {
     let user = await this.prisma.user.findUnique({
       where: {
         [socialField]: dto.accessToken, // In real implementation, use actual social ID
-      },
+      } as any, // Type assertion to handle dynamic field access
     });
 
     if (!user) {
