@@ -28,8 +28,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init
+# Install dumb-init and OpenSSL for Prisma
+RUN apk add --no-cache dumb-init openssl
 
 # Copy package files
 COPY package*.json ./
