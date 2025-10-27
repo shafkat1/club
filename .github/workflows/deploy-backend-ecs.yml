@@ -10,6 +10,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  ECR_REGISTRY: 425687053209.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: clubapp-backend
   ECS_SERVICE: clubapp-backend-service
   ECS_CLUSTER: clubapp-dev-cluster
