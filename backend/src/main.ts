@@ -4,7 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
 
-// Deployment trigger - v1.4 (ECR DNS Issue RESOLVED! - Multiple successful deployments!)
+// Deployment trigger - v1.5 (ECR DNS Issue RESOLVED! - Service fully operational with 1 running task!)
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
