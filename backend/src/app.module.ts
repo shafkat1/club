@@ -32,6 +32,7 @@ import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',
       signOptions: { expiresIn: '24h' },
+      global: true,
     }),
 
     // Feature modules
