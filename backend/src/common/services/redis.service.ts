@@ -8,10 +8,15 @@ export class RedisService {
   private isConnected = false;
 
   constructor() {
-    this.initializeRedis();
+    // Don't initialize Redis immediately - let it be lazy
+    this.logger.log('Redis service initialized (lazy connection)');
   }
 
-  private async initializeRedis() {
+  private async ensureRedisConnection() {
+    if (this.client && this.isConnected) {
+      return;
+    }
+
     try {
       const redisUrl = this.buildRedisUrl();
       this.client = new Redis(redisUrl);
@@ -53,6 +58,7 @@ export class RedisService {
   }
 
   async get(key: string): Promise<string | null> {
+    await this.ensureRedisConnection();
     if (!this.client || !this.isConnected) {
       this.logger.warn('Redis not available, returning null for get');
       return null;
@@ -61,6 +67,7 @@ export class RedisService {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
+    await this.ensureRedisConnection();
     if (!this.client || !this.isConnected) {
       this.logger.warn('Redis not available, skipping set operation');
       return;
@@ -73,6 +80,7 @@ export class RedisService {
   }
 
   async del(key: string): Promise<void> {
+    await this.ensureRedisConnection();
     if (!this.client || !this.isConnected) {
       this.logger.warn('Redis not available, skipping del operation');
       return;
@@ -81,6 +89,7 @@ export class RedisService {
   }
 
   async incr(key: string): Promise<number> {
+    await this.ensureRedisConnection();
     if (!this.client || !this.isConnected) {
       this.logger.warn('Redis not available, returning 0 for incr');
       return 0;
@@ -89,6 +98,7 @@ export class RedisService {
   }
 
   async expire(key: string, ttl: number): Promise<void> {
+    await this.ensureRedisConnection();
     if (!this.client || !this.isConnected) {
       this.logger.warn('Redis not available, skipping expire operation');
       return;
