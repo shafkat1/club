@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ordersAPI, venuesAPI } from '@/lib/api'
-import { getUser } from '@/lib/auth'
+import { useAuthStore } from '@/store/authStore'
+import { apiClient } from '@/utils/api-client'
+import { getErrorMessage } from '@/utils/error-handler'
 
 interface Stats {
   totalOrders: number
@@ -11,15 +12,11 @@ interface Stats {
   pendingOrders: number
 }
 
-interface User {
-  displayName?: string
-  phone?: string
-}
-
 export default function DashboardPage() {
+  const { user } = useAuthStore()
   const [stats, setStats] = useState<Stats | null>(null)
-  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -27,19 +24,28 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const userData = await getUser()
-      setUser(userData)
+      setLoading(true)
+      setError(null)
+      console.log('📊 Loading dashboard data...')
 
-      const response = await ordersAPI.list()
-      const orders = response.data
+      // Call the orders API endpoint
+      const response = await apiClient.get('/orders')
+      const orders = response || []
 
-      setStats({
+      console.log(`✅ Loaded ${orders.length} orders`)
+
+      // Calculate stats
+      const stats: Stats = {
         totalOrders: orders.length,
-        redeemedToday: orders.filter((o: any) => o.status === 'REDEEMED').length,
-        pendingOrders: orders.filter((o: any) => o.status === 'PENDING').length,
-      })
-    } catch (error) {
-      console.error('Error loading dashboard:', error)
+        redeemedToday: orders.filter((o: any) => o.status === 'REDEEMED' || o.status === 'completed').length,
+        pendingOrders: orders.filter((o: any) => o.status === 'PENDING' || o.status === 'pending').length,
+      }
+
+      setStats(stats)
+    } catch (err) {
+      const message = getErrorMessage(err)
+      console.error('❌ Error loading dashboard:', message)
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -50,51 +56,73 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-6">
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.displayName || 'Bartender'}! 👋
+          Welcome back, {user?.displayName || user?.email || 'Bartender'}! 👋
         </h1>
-        <p className="text-gray-600 mt-1">{user?.phone}</p>
+        <p className="text-gray-600 mt-1">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </p>
       </div>
 
       {/* Main Content */}
       <div className="px-6 py-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-700 font-medium">Error loading dashboard</p>
+            <p className="text-sm text-red-600 mt-1">{error}</p>
+          </div>
+        )}
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
                   Total Orders
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {loading ? '—' : stats?.totalOrders || 0}
+                  {loading ? (
+                    <span className="inline-block animate-pulse">—</span>
+                  ) : (
+                    stats?.totalOrders || 0
+                  )}
                 </p>
               </div>
               <div className="text-4xl">🍹</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
                   Redeemed Today
                 </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
-                  {loading ? '—' : stats?.redeemedToday || 0}
+                  {loading ? (
+                    <span className="inline-block animate-pulse">—</span>
+                  ) : (
+                    stats?.redeemedToday || 0
+                  )}
                 </p>
               </div>
               <div className="text-4xl">✅</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
                   Pending Orders
                 </p>
                 <p className="text-3xl font-bold text-yellow-600 mt-2">
-                  {loading ? '—' : stats?.pendingOrders || 0}
+                  {loading ? (
+                    <span className="inline-block animate-pulse">—</span>
+                  ) : (
+                    stats?.pendingOrders || 0
+                  )}
                 </p>
               </div>
               <div className="text-4xl">⏳</div>
@@ -102,12 +130,25 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Reload Button */}
+        {error && (
+          <div className="mb-6">
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition font-medium text-sm"
+            >
+              {loading ? 'Retrying...' : 'Try Again'}
+            </button>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
-              href="/scan"
+              href="/dashboard/scan"
               className="block bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-6 text-center transition"
             >
               <div className="text-3xl mb-2">📱</div>
@@ -116,7 +157,7 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/orders"
+              href="/dashboard/orders"
               className="block bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-6 text-center transition"
             >
               <div className="text-3xl mb-2">📋</div>
@@ -125,7 +166,7 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/profile"
+              href="/dashboard/profile"
               className="block bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-6 text-center transition"
             >
               <div className="text-3xl mb-2">👤</div>
