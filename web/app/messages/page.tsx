@@ -88,7 +88,7 @@ const mockConversations: Conversation[] = [
       online: false,
     },
     lastMessage: {
-      content: 'Let me know when you're free!',
+      content: "Let me know when you're free!",
       timestamp: new Date(Date.now() - 3 * 24 * 60 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
     unreadCount: 0,
