@@ -170,6 +170,33 @@ export class AuthService {
   }
 
   // ============================================
+  // DEVELOPMENT TEST LOGIN (REMOVE IN PRODUCTION)
+  // ============================================
+  async testLogin(identifier: string): Promise<TokenResponseDto> {
+    // This is development-only! Returns a valid JWT without OTP.
+    // Use this for testing only - REMOVE before production!
+    
+    console.log('⚠️ DEV MODE: Test login called for:', identifier);
+
+    // Create a mock user object (in production, this would be from database)
+    const mockUser = {
+      id: `test_${Date.now()}`,
+      phone: identifier.includes('@') ? null : identifier,
+      email: identifier.includes('@') ? identifier : `test+${Date.now()}@desh.co`,
+      displayName: 'Test Bartender',
+      profileImage: null,
+      bio: 'Test user for development',
+      phoneVerified: true,
+      emailVerified: true,
+      createdAt: new Date(),
+    };
+
+    console.log('✅ DEV MODE: Generating test tokens for user:', mockUser.id);
+
+    return this.generateTokens(mockUser);
+  }
+
+  // ============================================
   // UTILITIES
   // ============================================
   private generateOtp(): string {

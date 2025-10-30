@@ -24,6 +24,19 @@ export class AuthController {
   }
 
   // ============================================
+  // DEVELOPMENT TEST LOGIN (REMOVE IN PRODUCTION)
+  // ============================================
+  @Post('test-login')
+  @HttpCode(200)
+  async testLogin(@Body() body: { phone?: string; email?: string }): Promise<TokenResponseDto> {
+    // This endpoint is for development only - REMOVE before production!
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Test login not available in production');
+    }
+    return this.authService.testLogin(body.phone || body.email || '5551234567');
+  }
+
+  // ============================================
   // SOCIAL LOGIN
   // ============================================
   @Post('social/login')
