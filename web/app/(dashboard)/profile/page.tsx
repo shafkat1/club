@@ -1,99 +1,80 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getUser, clearAuth, setUser } from '@/lib/auth'
-
-interface User {
-  id: string
-  phone?: string
-  email?: string
-  displayName?: string
-  profileImage?: string
-  phoneVerified: boolean
-  emailVerified: boolean
-  createdAt: Date
-}
+import { useAuthStore } from '@/store/authStore'
+import { apiClient } from '@/utils/api-client'
+import { getErrorMessage } from '@/utils/error-handler'
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [user, setUserState] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, logout } = useAuthStore()
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({
-    displayName: '',
-    email: '',
+    displayName: user?.displayName || '',
+    email: user?.email || '',
   })
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    loadProfile()
-  }, [])
-
-  const loadProfile = async () => {
-    try {
-      const userData = await getUser()
-      if (!userData) {
-        router.push('/login')
-        return
-      }
-      setUserState(userData)
-      setFormData({
-        displayName: userData.displayName || '',
-        email: userData.email || '',
-      })
-    } catch (error) {
-      console.error('Error loading profile:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    setError(null)
   }
 
   const handleSave = async () => {
+    if (!formData.displayName.trim()) {
+      setError('Display name is required')
+      return
+    }
+
     setSaving(true)
-    setMessage('')
+    setError(null)
+    setSuccess(null)
 
     try {
-      // In a real app, you'd make an API call to update the profile
-      // const response = await userAPI.updateProfile(formData);
+      console.log('💾 Updating profile...')
       
-      // For now, just update local storage
-      if (user) {
-        const updatedUser = {
-          ...user,
-          displayName: formData.displayName,
-          email: formData.email,
-        }
-        await setUser(updatedUser)
-        setUserState(updatedUser)
-        setMessage('Profile updated successfully!')
-        setEditing(false)
-      }
-    } catch (error: any) {
-      setMessage(error.response?.data?.message || 'Failed to update profile')
+      const response = await apiClient.put('/profile', {
+        displayName: formData.displayName.trim(),
+      })
+
+      console.log('✅ Profile updated successfully')
+      setSuccess('Profile updated successfully!')
+      setEditing(false)
+
+      // Reset success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      const message = getErrorMessage(err)
+      console.error('❌ Error updating profile:', message)
+      setError(message)
     } finally {
       setSaving(false)
     }
   }
 
   const handleLogout = async () => {
-    await clearAuth()
-    router.push('/login')
+    try {
+      console.log('🚪 Logging out...')
+      await logout()
+      console.log('✅ Logged out successfully')
+      router.push('/login')
+    } catch (err) {
+      console.error('Logout error:', err)
+      // Force redirect even if logout fails
+      router.push('/login')
+    }
   }
 
-  if (loading) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600 mt-4">Loading profile...</p>
+          <p className="text-gray-600">No user data available</p>
         </div>
       </div>
     )
@@ -105,23 +86,29 @@ export default function ProfilePage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-          <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-            Back to Dashboard
+          <Link 
+            href="/dashboard" 
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            ← Back to Dashboard
           </Link>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-6 py-6">
-        {message && (
-          <div
-            className={`rounded-lg p-4 mb-6 ${
-              message.includes('successfully')
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
-          >
-            <p className="text-sm">{message}</p>
+        {/* Success Alert */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700 font-medium">{success}</p>
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-700 font-medium">Error</p>
+            <p className="text-sm text-red-600 mt-1">{error}</p>
           </div>
         )}
 
@@ -131,13 +118,15 @@ export default function ProfilePage() {
             <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-4xl mb-4">
               👤
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">{user?.displayName || 'Bartender'}</h2>
-            <p className="text-gray-600 mt-1">{user?.phone}</p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {user.displayName || user.email || 'Bartender'}
+            </h2>
+            <p className="text-gray-600 mt-1">{user.email}</p>
           </div>
 
           {/* Profile Information */}
           <div className="space-y-6">
-            {/* Name Field */}
+            {/* Display Name Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Display Name
@@ -150,53 +139,40 @@ export default function ProfilePage() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter your display name"
+                  disabled={saving}
                 />
               ) : (
                 <p className="text-gray-700 bg-gray-50 px-4 py-2 rounded-lg">
-                  {user?.displayName || 'Not set'}
+                  {user.displayName || 'Not set'}
                 </p>
               )}
             </div>
 
-            {/* Phone Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
-              <p className="text-gray-700 bg-gray-50 px-4 py-2 rounded-lg flex justify-between items-center">
-                <span>{user?.phone}</span>
-                <span className="text-green-600 text-sm font-medium">✓ Verified</span>
-              </p>
-            </div>
-
-            {/* Email Field */}
+            {/* Email Field (Read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
-              {editing ? (
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="Enter your email"
-                />
-              ) : (
-                <p className="text-gray-700 bg-gray-50 px-4 py-2 rounded-lg">
-                  {user?.email || 'Not set'}
-                </p>
-              )}
+              <p className="text-gray-700 bg-gray-50 px-4 py-2 rounded-lg flex justify-between items-center">
+                <span>{user.email}</span>
+                <span className="text-green-600 text-sm font-medium">✓ Verified</span>
+              </p>
             </div>
 
-            {/* Created At */}
+            {/* Account Created */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Created
               </label>
               <p className="text-gray-700 bg-gray-50 px-4 py-2 rounded-lg">
-                {new Date(user?.createdAt || '').toLocaleDateString()}
+                {user.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Unknown'}
               </p>
             </div>
           </div>
@@ -208,7 +184,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -219,6 +195,7 @@ export default function ProfilePage() {
                       displayName: user?.displayName || '',
                       email: user?.email || '',
                     })
+                    setError(null)
                   }}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition"
                 >
@@ -231,28 +208,25 @@ export default function ProfilePage() {
                   onClick={() => setEditing(true)}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
                 >
-                  Edit Profile
+                  ✏️ Edit Profile
                 </button>
                 <button
                   onClick={handleLogout}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition"
                 >
-                  Logout
+                  🚪 Logout
                 </button>
               </>
             )}
           </div>
         </div>
 
-        {/* Danger Zone */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-red-200 p-6">
-          <h3 className="text-lg font-bold text-red-600 mb-2">Danger Zone</h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Permanently delete your account and all associated data.
+        {/* Info */}
+        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-semibold text-blue-900 mb-2">💡 Info</h3>
+          <p className="text-sm text-blue-800">
+            Your email address is your unique identifier and cannot be changed. For security questions, contact support@desh.co.
           </p>
-          <button className="bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 font-medium py-2 px-4 rounded-lg transition">
-            Delete Account
-          </button>
         </div>
       </div>
     </div>

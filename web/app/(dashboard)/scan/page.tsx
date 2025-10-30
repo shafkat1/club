@@ -1,141 +1,178 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
-import { redemptionsAPI } from '@/lib/api'
-import Link from 'next/link'
+import { apiClient } from '@/utils/api-client'
+import { getErrorMessage } from '@/utils/error-handler'
 
 export default function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [scanning, setScanning] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [redeeming, setRedeeming] = useState(false)
-  const codeReader = useRef<BrowserMultiFormatReader | null>(null)
+  const [scanning, setScanning] = useState(true)
+  const [scannedCode, setScannedCode] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
 
+  // Initialize QR code scanner
   useEffect(() => {
+    if (!scanning || !videoRef.current) return
+
+    const reader = new BrowserMultiFormatReader()
+    readerRef.current = reader
+
+    const handleResult = async (result: any) => {
+      const code = result.getText()
+      if (code && code !== scannedCode) {
+        setScannedCode(code)
+        await processQRCode(code)
+      }
+    }
+
     const startScanning = async () => {
       try {
-        codeReader.current = new BrowserMultiFormatReader()
-        setScanning(true)
-
-        const result = await codeReader.current.decodeFromVideoElement(
-          videoRef.current!,
-          async (result) => {
-            if (result) {
-              const qrCode = result.getText()
-              await handleRedemption(qrCode)
-            }
-          }
-        )
-      } catch (error) {
-        console.error('Scanner error:', error)
-        setMessage({ type: 'error', text: 'Failed to start camera' })
+        console.log('📱 Starting QR scanner...')
+        await reader.decodeFromVideoElement(videoRef.current!, handleResult)
+      } catch (err) {
+        if (err instanceof Error && !err.message.includes('Not found')) {
+          console.error('Scanner error:', err)
+          setError('Camera access denied or not available')
+        }
       }
     }
 
     startScanning()
 
     return () => {
-      // Cleanup will happen automatically when component unmounts
-      if (codeReader.current) {
-        // Browser scanner stops when video element is no longer in DOM
-        setScanning(false)
+      try {
+        reader.reset()
+      } catch (e) {
+        // Ignore cleanup errors
       }
     }
-  }, [])
+  }, [scanning, scannedCode])
 
-  const handleRedemption = async (redemptionId: string) => {
-    if (redeeming) return
-
-    setRedeeming(true)
-    setMessage(null)
-
+  const processQRCode = async (code: string) => {
     try {
-      await redemptionsAPI.redeem(redemptionId)
-      setMessage({ type: 'success', text: '✅ Drink redeemed successfully!' })
+      setProcessing(true)
+      setError(null)
+      setSuccess(null)
 
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setMessage(null)
-        setRedeeming(false)
-      }, 2000)
-    } catch (error: any) {
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.message || 'Failed to redeem drink',
+      console.log('🔄 Processing QR code...')
+
+      // Call redemption API
+      const result = await apiClient.post('/redemptions/scan', {
+        qrCode: code,
       })
-      setRedeeming(false)
+
+      console.log('✅ Redemption successful:', result)
+      
+      setSuccess(
+        `✅ Redeemed${result.itemName ? ': ' + result.itemName : ''}!`
+      )
+      setScannedCode(null)
+
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null)
+        setProcessing(false)
+      }, 3000)
+    } catch (err) {
+      const message = getErrorMessage(err)
+      console.error('❌ Redemption failed:', message)
+      setError(message)
+      setProcessing(false)
     }
   }
 
-  const handleManualEntry = async () => {
-    const qrCode = prompt('Enter QR code or Redemption ID:')
-    if (qrCode) {
-      await handleRedemption(qrCode)
-    }
+  const toggleScanning = () => {
+    setScanning(!scanning)
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Scan Drinks</h1>
-        <Link href="/orders" className="text-blue-600 hover:text-blue-700 font-medium">
-          Orders
-        </Link>
-      </div>
-
-      {/* Scanner Container */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Video Feed */}
-          <div className="bg-black rounded-lg overflow-hidden mb-6 aspect-square">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              style={{ transform: 'scaleX(-1)' }}
-            />
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">QR Code Scanner</h1>
+          <div className="text-sm text-gray-500">
+            {scanning ? '🔴 Live' : '⚫ Stopped'}
           </div>
-
-          {/* Scanner Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h2 className="font-semibold text-blue-900 mb-2">How to Scan</h2>
-            <p className="text-sm text-blue-800">
-              Ask the customer to show their phone with the drink QR code. Position the QR code within the scanner frame.
-            </p>
-          </div>
-
-          {/* Message Display */}
-          {message && (
-            <div
-              className={`p-4 rounded-lg mb-6 text-sm font-medium ${
-                message.type === 'success'
-                  ? 'bg-green-50 border border-green-200 text-green-700'
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {/* Manual Entry Button */}
-          <button
-            onClick={handleManualEntry}
-            disabled={redeeming}
-            className="w-full bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            {redeeming ? 'Processing...' : 'Enter Code Manually'}
-          </button>
         </div>
       </div>
 
-      {/* Status Indicator */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4 text-center">
-        <div className="flex items-center justify-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${scanning ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
-          <span className="text-sm text-gray-600">
-            {scanning ? 'Camera Active' : 'Starting Camera...'}
-          </span>
+      {/* Main Content */}
+      <div className="flex-1 px-6 py-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md">
+          {/* Scanner Container */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden mb-6">
+            <video
+              ref={videoRef}
+              className="w-full bg-black"
+              style={{
+                maxWidth: '100%',
+                aspectRatio: '1 / 1',
+                objectFit: 'cover',
+              }}
+            />
+          </div>
+
+          {/* Controls */}
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={toggleScanning}
+              className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                scanning
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {scanning ? '⏹ Stop Scanning' : '▶ Start Scanning'}
+            </button>
+          </div>
+
+          {/* Success Alert */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-700 font-medium">{success}</p>
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">Error</p>
+              <p className="text-sm text-red-600 mt-1">{error}</p>
+            </div>
+          )}
+
+          {/* Processing */}
+          {processing && (
+            <div className="text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <p className="text-gray-600 text-sm">Processing...</p>
+            </div>
+          )}
+
+          {/* Last Scanned Code */}
+          {scannedCode && !success && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-600 font-medium">Last Scanned:</p>
+              <p className="font-mono text-blue-700 break-all text-sm mt-1">
+                {scannedCode}
+              </p>
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-center">
+            <p className="text-xs text-gray-600">
+              📱 Hold QR code in front of camera
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              ⏳ Codes are processed automatically
+            </p>
+          </div>
         </div>
       </div>
     </div>
