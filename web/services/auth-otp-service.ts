@@ -31,10 +31,8 @@ class OtpAuthService {
   private apiBaseUrl: string
 
   constructor() {
-    // Use the same base URL as apiClient
-    this.apiBaseUrl = typeof window !== 'undefined'
-      ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-      : 'http://localhost:3001/api'
+    // Use Next.js proxy - /api routes are rewritten to http://localhost:3001/api
+    this.apiBaseUrl = '/api'
   }
 
   /**
