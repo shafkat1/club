@@ -18,8 +18,9 @@ export default function RootLayout({
     const initializeAuth = async () => {
       try {
         console.log('🔐 Initializing authentication...')
-        await useAuthStore.getState().loadUser()
-        console.log('✅ Authentication initialized successfully')
+        // Disabled for UI testing - backend not running
+        // await useAuthStore.getState().loadUser()
+        console.log('✅ Authentication check skipped (UI testing mode)')
       } catch (error) {
         console.error('❌ Auth initialization failed:', error)
         // User will be redirected to login by protected routes

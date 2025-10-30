@@ -18,10 +18,11 @@ export default function DashboardLayout({
   // Check authentication on mount
   useEffect(() => {
     // Redirect to login if not authenticated
-    if (!isLoading && !isAuthenticated) {
-      console.log('⚠️ Not authenticated, redirecting to login...')
-      router.push('/login')
-    }
+    // Disabled for UI testing mode - backend not running
+    // if (!isLoading && !isAuthenticated) {
+    //   console.log('⚠️ Not authenticated, redirecting to login...')
+    //   router.push('/login')
+    // }
   }, [isAuthenticated, isLoading, router])
 
   const handleLogout = async () => {
@@ -36,21 +37,23 @@ export default function DashboardLayout({
   }
 
   // Show loading state while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+  // Disabled for UI testing mode
+  // if (isLoading) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+  //         <p className="text-gray-600">Loading...</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   // Don't render dashboard if not authenticated
-  if (!isAuthenticated) {
-    return null // Will redirect via useEffect
-  }
+  // Disabled for UI testing mode
+  // if (!isAuthenticated) {
+  //   return null // Will redirect via useEffect
+  // }
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
