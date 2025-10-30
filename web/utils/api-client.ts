@@ -100,43 +100,35 @@ export class ApiClient {
 
   /**
    * Authentication Methods
+   * NOTE: OTP-based authentication is handled by OtpAuthService
    */
 
   async signup(email: string, password: string, displayName?: string) {
-    try {
-      const response = await this.client.post('/auth/signup', {
-        email,
-        password,
-        displayName,
-      })
-
-      this.setTokens(response.data.accessToken, response.data.refreshToken)
-      return response.data
-    } catch (error) {
-      throw this.handleError(error)
-    }
+    throw new Error(
+      'Email/password signup is not supported. Use OTP authentication:\n' +
+      'import { otpAuthService } from "@/services/auth-otp-service"\n' +
+      'await otpAuthService.sendOtp(phoneNumber)\n' +
+      'await otpAuthService.verifyOtp(phoneNumber, code)'
+    )
   }
 
   async login(email: string, password: string) {
-    try {
-      const response = await this.client.post('/auth/login', {
-        email,
-        password,
-      })
-
-      this.setTokens(response.data.accessToken, response.data.refreshToken)
-      return response.data
-    } catch (error) {
-      throw this.handleError(error)
-    }
+    throw new Error(
+      'Email/password login is not supported. Use OTP authentication:\n' +
+      'import { otpAuthService } from "@/services/auth-otp-service"\n' +
+      'await otpAuthService.sendOtp(phoneNumber)\n' +
+      'await otpAuthService.verifyOtp(phoneNumber, code)'
+    )
   }
 
   async logout() {
     try {
-      await this.client.post('/auth/logout')
+      // Note: Backend doesn't have logout endpoint
+      // Just clear local tokens
+      console.log('🚪 Logging out...')
+      this.clearTokens()
     } catch (error) {
       console.error('Logout error:', error)
-    } finally {
       this.clearTokens()
     }
   }
@@ -156,30 +148,26 @@ export class ApiClient {
   }
 
   async googleLogin(token: string) {
-    try {
-      const response = await this.client.post('/auth/google', { token })
-      this.setTokens(response.data.accessToken, response.data.refreshToken)
-      return response.data
-    } catch (error) {
-      throw this.handleError(error)
-    }
+    throw new Error(
+      'Use otpAuthService.socialLogin("google", token) instead'
+    )
   }
 
   async facebookLogin(token: string) {
-    try {
-      const response = await this.client.post('/auth/facebook', { token })
-      this.setTokens(response.data.accessToken, response.data.refreshToken)
-      return response.data
-    } catch (error) {
-      throw this.handleError(error)
-    }
+    throw new Error(
+      'Use otpAuthService.socialLogin("facebook", token) instead'
+    )
   }
 
   /**
    * Token Management
    */
 
-  private setTokens(accessToken: string, refreshToken: string) {
+  setTokens(accessToken: string, refreshToken: string) {
+    this._setTokens(accessToken, refreshToken)
+  }
+
+  private _setTokens(accessToken: string, refreshToken: string) {
     this.setAccessToken(accessToken)
     this.refreshToken = refreshToken
     localStorage.setItem('refreshToken', refreshToken)
@@ -224,7 +212,7 @@ export class ApiClient {
   }
 
   async updateProfile(data: any) {
-    const response = await this.client.put('/users/me', data)
+    const response = await this.client.patch('/users/me', data)
     return response.data
   }
 
