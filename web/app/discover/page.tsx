@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/app/components/ui/checkbox'
 import { Label } from '@/app/components/ui/label'
 import { Navigation } from '@/app/components/Navigation'
+import { SendOfferDialog } from '@/app/components/SendOfferDialog'
 
 interface User {
   id: string
@@ -125,6 +126,17 @@ const mockUsers: User[] = [
   },
 ]
 
+const mockDrinkMenu = [
+   { id: '1', name: 'Espresso', price: 4, emoji: '☕', category: 'coffee' as const },
+   { id: '2', name: 'Latte', price: 5, emoji: '☕', category: 'coffee' as const },
+   { id: '3', name: 'Beer', price: 6, emoji: '🍺', category: 'cocktail' as const },
+   { id: '4', name: 'Martini', price: 12, emoji: '🍸', category: 'cocktail' as const },
+   { id: '5', name: 'Margarita', price: 10, emoji: '🍹', category: 'cocktail' as const },
+   { id: '6', name: 'Pizza', price: 15, emoji: '🍕', category: 'food' as const },
+   { id: '7', name: 'Burger', price: 12, emoji: '🍔', category: 'food' as const },
+   { id: '8', name: 'Salad', price: 8, emoji: '🥗', category: 'food' as const },
+ ]
+
 interface Filters {
   status: 'all' | 'alone' | 'in-group'
   sortBy: 'just-arrived' | 'verified' | 'high-rating' | 'distance'
@@ -139,13 +151,22 @@ export default function DiscoverPage() {
     sortBy: 'just-arrived',
   })
   const [likedUsers, setLikedUsers] = useState<string[]>([])
+  const [selectedUserForOffer, setSelectedUserForOffer] = useState<User | null>(null)
+  const [showOfferDialog, setShowOfferDialog] = useState(false)
 
   const handleLike = (userId: string) => {
     setLikedUsers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]))
   }
 
   const handleSendOffer = (user: User) => {
-    console.log('Send offer to:', user.name)
+    setSelectedUserForOffer(user)
+    setShowOfferDialog(true)
+  }
+
+  const handleOfferSend = (item: any, message: string) => {
+    console.log('Drink offer sent:', { user: selectedUserForOffer?.name, item, message })
+    setShowOfferDialog(false)
+    setSelectedUserForOffer(null)
   }
 
   const handleStatusFilter = (status: 'all' | 'alone' | 'in-group') => {
@@ -385,6 +406,13 @@ export default function DiscoverPage() {
           </div>
         </div>
       </main>
+      <SendOfferDialog
+        open={showOfferDialog}
+        onOpenChange={setShowOfferDialog}
+        user={selectedUserForOffer || { id: '', name: '', username: '' }}
+        menuItems={mockDrinkMenu}
+        onSend={handleOfferSend}
+      />
     </div>
   )
 }
