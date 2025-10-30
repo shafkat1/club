@@ -118,7 +118,7 @@ export class AuthService {
   // ============================================
   // TOKEN MANAGEMENT
   // ============================================
-  private async generateTokens(user: any): Promise<TokenResponseDto> {
+  private async generateTokens(user: any, skipRedis: boolean = false): Promise<TokenResponseDto> {
     const payload = {
       sub: user.id,
       phone: user.phone,
@@ -134,12 +134,19 @@ export class AuthService {
       secret: process.env.JWT_REFRESH_SECRET,
     });
 
-    // Store refresh token in Redis
-    await this.redis.set(
-      `refresh_token:${user.id}`,
-      refreshToken,
-      7 * 24 * 60 * 60, // 7 days
-    );
+    // Store refresh token in Redis (skip for test-login)
+    if (!skipRedis) {
+      try {
+        await this.redis.set(
+          `refresh_token:${user.id}`,
+          refreshToken,
+          7 * 24 * 60 * 60, // 7 days
+        );
+      } catch (error) {
+        // Redis is optional for development
+        console.warn('⚠️ Warning: Could not store refresh token in Redis:', error.message);
+      }
+    }
 
     return {
       accessToken,
@@ -193,7 +200,7 @@ export class AuthService {
 
     console.log('✅ DEV MODE: Generating test tokens for user:', mockUser.id);
 
-    return this.generateTokens(mockUser);
+    return this.generateTokens(mockUser, true); // Pass true to skipRedis
   }
 
   // ============================================
