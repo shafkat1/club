@@ -14,7 +14,7 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard')
+      router.push('/app/map')
     }
   }, [isAuthenticated, router])
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
       console.log('Sign In:', signInData)
       setSuccessMessage('✅ Sign in successful!')
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/app/map')
       }, 1500)
     } catch (err) {
       const message = getErrorMessage(err)
@@ -168,7 +168,7 @@ export default function LoginPage() {
       console.log('Verify OTP:', otpData.phone, otpData.otp)
       setSuccessMessage('✅ OTP verified! Redirecting...')
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/app/map')
       }, 1500)
     } catch (err) {
       const message = getErrorMessage(err)
