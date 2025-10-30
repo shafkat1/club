@@ -170,17 +170,21 @@ export class ApiClient {
   private _setTokens(accessToken: string, refreshToken: string) {
     this.setAccessToken(accessToken)
     this.refreshToken = refreshToken
-    localStorage.setItem('refreshToken', refreshToken)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('refreshToken', refreshToken)
+    }
   }
 
   private setAccessToken(token: string) {
     this.accessToken = token
     // Store in sessionStorage for page refresh recovery
-    sessionStorage.setItem('accessToken', token)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('accessToken', token)
+    }
   }
 
   private getAccessToken(): string | null {
-    if (!this.accessToken) {
+    if (!this.accessToken && typeof window !== 'undefined') {
       // Try to load from sessionStorage (for page refresh)
       this.accessToken = sessionStorage.getItem('accessToken')
     }
@@ -190,12 +194,16 @@ export class ApiClient {
   private clearTokens() {
     this.accessToken = null
     this.refreshToken = null
-    localStorage.removeItem('refreshToken')
-    sessionStorage.removeItem('accessToken')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('refreshToken')
+      sessionStorage.removeItem('accessToken')
+    }
   }
 
   private loadTokensFromStorage() {
-    this.refreshToken = localStorage.getItem('refreshToken')
+    if (typeof window !== 'undefined') {
+      this.refreshToken = localStorage.getItem('refreshToken')
+    }
   }
 
   isAuthenticated(): boolean {
