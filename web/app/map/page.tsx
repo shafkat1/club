@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Plus, Minus } from 'lucide-react'
+import { Navigation } from '@/app/components/Navigation'
 
 interface Venue {
   id: string
@@ -125,78 +126,81 @@ export default function MapPage() {
   }, [isReady])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Map</h1>
-        <p className="text-sm text-gray-600 mt-1">Explore venues and check-ins nearby</p>
-      </div>
-
-      {/* Map Container */}
-      <div className="flex-1 relative">
-        <div
-          ref={mapRef}
-          className="w-full h-full rounded-lg overflow-hidden"
-          style={{ minHeight: '400px' }}
-        />
-
-        {/* Legend */}
-        <div className="absolute bottom-6 left-6 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-          <h3 className="font-bold text-gray-900 mb-3">Venue Types</h3>
-          <div className="space-y-2">
-            {(Object.entries(venueTypeColors) as [string, any][]).map(([type, colors]) => (
-              <div key={type} className="flex items-center gap-3">
-                <div
-                  className="w-4 h-4 rounded-full border-2"
-                  style={{ backgroundColor: colors.bg, borderColor: colors.border }}
-                />
-                <span className="text-sm text-gray-700 capitalize">{type}</span>
-              </div>
-            ))}
-          </div>
+    <div className="flex min-h-screen bg-gray-50">
+      <Navigation />
+      <main className="flex-1 overflow-auto flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+          <h1 className="text-2xl font-bold text-gray-900">Map</h1>
+          <p className="text-sm text-gray-600 mt-1">Explore venues and check-ins nearby</p>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="absolute top-6 right-6 flex flex-col gap-2">
-          <button
-            onClick={() => mapInstanceRef.current?.zoomIn()}
-            className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center text-gray-700 font-bold transition"
-          >
-            <Plus size={20} />
-          </button>
-          <button
-            onClick={() => mapInstanceRef.current?.zoomOut()}
-            className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center text-gray-700 font-bold transition"
-          >
-            <Minus size={20} />
-          </button>
-        </div>
+        {/* Map Container */}
+        <div className="flex-1 relative">
+          <div
+            ref={mapRef}
+            className="w-full h-full rounded-lg overflow-hidden"
+            style={{ minHeight: '400px' }}
+          />
 
-        {/* People Checked In Badge */}
-        <div className="absolute top-6 left-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg px-4 py-2">
-          <p className="text-sm font-medium">👥 {mockVenues.reduce((sum, v) => sum + v.checkIns, 0)} people checked in nearby</p>
-        </div>
-      </div>
-
-      {/* Selected Venue Panel */}
-      {selectedVenue && (
-        <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">{selectedVenue.name}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                <span className="capitalize font-medium">{selectedVenue.type}</span> • {selectedVenue.checkIns} check-ins
-              </p>
+          {/* Legend */}
+          <div className="absolute bottom-6 left-6 bg-white rounded-lg shadow-lg p-4 max-w-xs">
+            <h3 className="font-bold text-gray-900 mb-3">Venue Types</h3>
+            <div className="space-y-2">
+              {(Object.entries(venueTypeColors) as [string, any][]).map(([type, colors]) => (
+                <div key={type} className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full border-2"
+                    style={{ backgroundColor: colors.bg, borderColor: colors.border }}
+                  />
+                  <span className="text-sm text-gray-700 capitalize">{type}</span>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="absolute top-6 right-6 flex flex-col gap-2">
             <button
-              onClick={() => setSelectedVenue(null)}
-              className="text-gray-400 hover:text-gray-600 font-bold"
+              onClick={() => mapInstanceRef.current?.zoomIn()}
+              className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center text-gray-700 font-bold transition"
             >
-              ✕
+              <Plus size={20} />
+            </button>
+            <button
+              onClick={() => mapInstanceRef.current?.zoomOut()}
+              className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center text-gray-700 font-bold transition"
+            >
+              <Minus size={20} />
             </button>
           </div>
+
+          {/* People Checked In Badge */}
+          <div className="absolute top-6 left-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg px-4 py-2">
+            <p className="text-sm font-medium">👥 {mockVenues.reduce((sum, v) => sum + v.checkIns, 0)} people checked in nearby</p>
+          </div>
         </div>
-      )}
+
+        {/* Selected Venue Panel */}
+        {selectedVenue && (
+          <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">{selectedVenue.name}</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  <span className="capitalize font-medium">{selectedVenue.type}</span> • {selectedVenue.checkIns} check-ins
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedVenue(null)}
+                className="text-gray-400 hover:text-gray-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
