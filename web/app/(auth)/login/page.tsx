@@ -435,7 +435,7 @@ export default function LoginPage() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
                       required
                     />
-                  </div>
+          </div>
 
                   <button
                     type="submit"
@@ -461,25 +461,25 @@ export default function LoginPage() {
                     <>
                       <div className="space-y-2">
                         <label htmlFor="otp-phone" className="block text-sm font-medium text-gray-700">
-                          Phone Number
-                        </label>
+                    Phone Number
+                  </label>
                         <div className="flex gap-2">
                           <Phone className="h-5 w-5 text-gray-400 mt-3" />
-                          <input
+                  <input
                             id="otp-phone"
-                            type="tel"
+                    type="tel"
                             placeholder="+1 (555) 000-0000"
                             value={otpData.phone}
                             onChange={(e) => setOtpData({ ...otpData, phone: e.target.value })}
                             disabled={loading}
                             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
-                            required
-                          />
+                    required
+                  />
                         </div>
                         <p className="text-xs text-gray-500">
                           Enter your phone number to receive an OTP code
-                        </p>
-                      </div>
+                  </p>
+                </div>
 
                       <button
                         type="submit"
@@ -495,37 +495,37 @@ export default function LoginPage() {
                           <>📱 Send OTP</>
                         )}
                       </button>
-                    </>
-                  ) : (
-                    <>
+              </>
+            ) : (
+              <>
                       <div className="space-y-2">
                         <label htmlFor="otp-code" className="block text-sm font-medium text-gray-700">
-                          Verification Code
-                        </label>
+                    Verification Code
+                  </label>
                         <p className="text-sm text-gray-600">
                           Sent to <span className="font-semibold">{otpData.phone}</span>
                         </p>
-                        <input
+                  <input
                           id="otp-code"
-                          type="text"
-                          placeholder="000000"
+                    type="text"
+                    placeholder="000000"
                           value={otpData.otp}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, '').slice(0, 6)
                             setOtpData({ ...otpData, otp: value })
                           }}
                           disabled={loading}
-                          maxLength={6}
+                    maxLength={6}
                           inputMode="numeric"
                           className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition disabled:bg-gray-100 text-center text-3xl tracking-widest font-mono"
-                          required
-                        />
+                    required
+                  />
                         <p className="text-xs text-gray-500">
                           Enter the 6-digit code from your text message
-                        </p>
-                      </div>
+                  </p>
+                </div>
 
-                      <button
+                <button
                         type="submit"
                         disabled={loading || otpData.otp.length !== 6}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2"
@@ -554,22 +554,22 @@ export default function LoginPage() {
                           )}
                         </button>
 
-                        <button
+            <button
                           type="button"
                           onClick={() => {
                             setOtpSent(false)
                             setOtpData({ phone: '', otp: '' })
                             setError(null)
                           }}
-                          disabled={loading}
+              disabled={loading}
                           className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 font-medium transition"
-                        >
+            >
                           ← Change Phone Number
-                        </button>
+            </button>
                       </div>
                     </>
                   )}
-                </form>
+          </form>
               )}
             </div>
 
