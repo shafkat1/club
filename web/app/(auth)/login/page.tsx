@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { otpAuthService } from '@/services/auth-otp-service'
 import { useAuthStore } from '@/store/authStore'
 import { getErrorMessage } from '@/utils/error-handler'
-import { Mail, Calendar, Loader2 } from 'lucide-react'
-
-type AuthStep = 'phone' | 'otp' | 'signup'
+import { Mail, Calendar, Phone, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,37 +18,35 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router])
 
-  // Form state
-  const [step, setStep] = useState<AuthStep>('phone')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
+  // Tab state
+  const [activeTab, setActiveTab] = useState('signin')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [resendTimer, setResendTimer] = useState(0)
-  const [selectedTab, setSelectedTab] = useState('signin')
 
-  // Sign up state
-  const [signupData, setSignupData] = useState({
+  // Sign In state
+  const [signInData, setSignInData] = useState({
     email: '',
     password: '',
+  })
+
+  // Sign Up state
+  const [signUpData, setSignUpData] = useState({
     name: '',
     dateOfBirth: '',
-  })
-
-  // Sign in state
-  const [signinData, setSigninData] = useState({
     email: '',
     password: '',
   })
 
-  // Auto-decrement resend timer
-  useEffect(() => {
-    if (resendTimer <= 0) return
-    const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [resendTimer])
+  // OTP state
+  const [otpData, setOtpData] = useState({
+    phone: '',
+    otp: '',
+  })
+  const [otpSent, setOtpSent] = useState(false)
+  const [resendTimer, setResendTimer] = useState(0)
 
+  // Calculate age helper
   const calculateAge = (dateOfBirth: string): number => {
     const today = new Date()
     const birthDate = new Date(dateOfBirth)
@@ -63,98 +58,144 @@ export default function LoginPage() {
     return age
   }
 
-  /**
-   * Step 1: Send OTP to phone number
-   */
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // Auto-decrement resend timer
+  useEffect(() => {
+    if (resendTimer <= 0) return
+    const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendTimer])
+
+  // Handle Sign In
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError(null)
-    setIsLoading(true)
+    setSuccessMessage(null)
 
     try {
-      if (!phone.match(/^\+?[\d\s\-()]{10,}$/)) {
-        throw new Error('Please enter a valid phone number (e.g., +1 234 567 8900)')
+      if (!signInData.email || !signInData.password) {
+        throw new Error('Email and password are required')
       }
 
-      console.log(`📱 Sending OTP to ${phone}...`)
-      await otpAuthService.sendOtp(phone)
-
-      setStep('otp')
-      setResendTimer(60)
-      setSuccessMessage(`✅ OTP sent to ${phone}`)
-      console.log('✅ OTP sent successfully')
+      // TODO: Integrate with backend
+      console.log('Sign In:', signInData)
+      setSuccessMessage('✅ Sign in successful!')
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
     } catch (err) {
       const message = getErrorMessage(err)
-      console.error('❌ Error sending OTP:', message)
       setError(message)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  /**
-   * Step 2: Verify OTP and login
-   */
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  // Handle Sign Up
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError(null)
-    setIsLoading(true)
+    setSuccessMessage(null)
 
     try {
-      if (otp.length !== 6 || !otp.match(/^\d{6}$/)) {
+      if (!signUpData.name || !signUpData.dateOfBirth || !signUpData.email || !signUpData.password) {
+        throw new Error('All fields are required')
+      }
+
+      const age = calculateAge(signUpData.dateOfBirth)
+      if (age < 21) {
+        throw new Error(`You must be at least 21 years old. You are currently ${age} years old.`)
+      }
+
+      if (new Date(signUpData.dateOfBirth) > new Date()) {
+        throw new Error('Date of birth cannot be in the future')
+      }
+
+      // TODO: Integrate with backend
+      console.log('Sign Up:', signUpData)
+      setSuccessMessage('✅ Account created successfully! Please sign in.')
+      setTimeout(() => {
+        setActiveTab('signin')
+        setSignUpData({ name: '', dateOfBirth: '', email: '', password: '' })
+      }, 1500)
+    } catch (err) {
+      const message = getErrorMessage(err)
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle Send OTP
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      if (!otpData.phone.match(/^\+?[\d\s\-()]{10,}$/)) {
+        throw new Error('Please enter a valid phone number')
+      }
+
+      // TODO: Integrate with backend
+      console.log('Send OTP:', otpData.phone)
+      setOtpSent(true)
+      setResendTimer(60)
+      setSuccessMessage(`✅ OTP sent to ${otpData.phone}`)
+    } catch (err) {
+      const message = getErrorMessage(err)
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle Verify OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      if (otpData.otp.length !== 6 || !otpData.otp.match(/^\d{6}$/)) {
         throw new Error('Please enter a valid 6-digit OTP')
       }
 
-      console.log(`🔐 Verifying OTP...`)
-      const result = await otpAuthService.verifyOtp(phone, otp)
-
-      if (result.user) {
-        setUser(result.user)
-        console.log('✅ Login successful, redirecting...')
+      // TODO: Integrate with backend
+      console.log('Verify OTP:', otpData.phone, otpData.otp)
+      setSuccessMessage('✅ OTP verified! Redirecting...')
+      setTimeout(() => {
         router.push('/dashboard')
-      }
+      }, 1500)
     } catch (err) {
       const message = getErrorMessage(err)
-      console.error('❌ Error verifying OTP:', message)
       setError(message)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  /**
-   * Resend OTP
-   */
+  // Handle Resend OTP
   const handleResendOtp = async () => {
     if (resendTimer > 0) return
 
+    setLoading(true)
     setError(null)
-    setIsLoading(true)
 
     try {
-      console.log(`📱 Resending OTP to ${phone}...`)
-      await otpAuthService.sendOtp(phone)
+      // TODO: Integrate with backend
+      console.log('Resend OTP:', otpData.phone)
       setResendTimer(60)
-      setSuccessMessage(`✅ OTP resent to ${phone}`)
-      console.log('✅ OTP resent successfully')
+      setSuccessMessage(`✅ OTP resent to ${otpData.phone}`)
     } catch (err) {
       const message = getErrorMessage(err)
-      console.error('❌ Error resending OTP:', message)
       setError(message)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
-  }
-
-  /**
-   * Go back to phone entry
-   */
-  const handleBack = () => {
-    setStep('phone')
-    setOtp('')
-    setError(null)
-    setSuccessMessage(null)
-    setResendTimer(0)
   }
 
   return (
@@ -162,7 +203,10 @@ export default function LoginPage() {
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full opacity-20 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-20 blur-3xl animate-pulse"
+          style={{ animationDelay: '1s' }}
+        />
       </div>
 
       {/* Main Card */}
@@ -179,11 +223,11 @@ export default function LoginPage() {
             </p>
 
             {/* First-time user help */}
-            {!error && !successMessage && step === 'phone' && (
+            {!error && !successMessage && (
               <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded text-sm text-left">
                 <p className="font-medium mb-1">🎉 First time here?</p>
                 <p className="text-xs text-gray-700">
-                  Use your phone number to receive an OTP code for instant access!
+                  Use the <span className="font-semibold">Sign Up</span> tab to create an account or <span className="font-semibold">OTP</span> for phone-based authentication!
                 </p>
               </div>
             )}
@@ -206,129 +250,328 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Main Content - Phone Entry */}
-            {step === 'phone' && (
-              <form onSubmit={handleSendOtp} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone Number
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="text-gray-400 mt-3 text-xl">📱</div>
+            {/* Tabs */}
+            <div className="space-y-4">
+              {/* Tab List */}
+              <div className="grid grid-cols-3 gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => {
+                    setActiveTab('signin')
+                    setError(null)
+                    setSuccessMessage(null)
+                  }}
+                  className={`py-2 px-4 rounded transition font-medium text-sm ${
+                    activeTab === 'signin'
+                      ? 'bg-white text-gray-900 shadow'
+                      : 'bg-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('signup')
+                    setError(null)
+                    setSuccessMessage(null)
+                  }}
+                  className={`py-2 px-4 rounded transition font-medium text-sm ${
+                    activeTab === 'signup'
+                      ? 'bg-white text-gray-900 shadow'
+                      : 'bg-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Sign Up
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('otp')
+                    setError(null)
+                    setSuccessMessage(null)
+                  }}
+                  className={`py-2 px-4 rounded transition font-medium text-sm ${
+                    activeTab === 'otp'
+                      ? 'bg-white text-gray-900 shadow'
+                      : 'bg-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  OTP
+                </button>
+              </div>
+
+              {/* Tab Content */}
+
+              {/* Sign In Tab */}
+              {activeTab === 'signin' && (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="signin-email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <div className="flex gap-2">
+                      <Mail className="h-5 w-5 text-gray-400 mt-3" />
+                      <input
+                        id="signin-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={signInData.email}
+                        onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                        disabled={loading}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="signin-password" className="block text-sm font-medium text-gray-700">
+                      Password
+                    </label>
                     <input
-                      id="phone"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value)
-                        setError(null)
-                      }}
-                      disabled={isLoading}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100 disabled:text-gray-500"
+                      id="signin-password"
+                      type="password"
+                      value={signInData.password}
+                      onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                      disabled={loading}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
                       required
-                      autoComplete="tel"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Enter your phone number to receive an OTP code
-                  </p>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading || !phone.trim()}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-md"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Sending OTP...
-                    </>
-                  ) : (
-                    <>📱 Send OTP</>
-                  )}
-                </button>
-              </form>
-            )}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        'Sign In'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      className="flex-1 bg-white border-2 border-indigo-200 hover:bg-indigo-50 disabled:bg-gray-100 text-gray-700 font-semibold py-3 rounded-lg transition"
+                    >
+                      🔍 Test
+                    </button>
+                  </div>
+                </form>
+              )}
 
-            {/* OTP Entry */}
-            {step === 'otp' && (
-              <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                    Verification Code
-                  </label>
-                  <p className="text-sm text-gray-600">
-                    Sent to <span className="font-semibold">{phone}</span>
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="text-gray-400 mt-3 text-xl">🔐</div>
+              {/* Sign Up Tab */}
+              {activeTab === 'signup' && (
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="signup-name" className="block text-sm font-medium text-gray-700">
+                      Full Name
+                    </label>
                     <input
-                      id="otp"
+                      id="signup-name"
                       type="text"
-                      placeholder="000000"
-                      value={otp}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6)
-                        setOtp(value)
-                        setError(null)
-                      }}
-                      disabled={isLoading}
-                      maxLength={6}
-                      inputMode="numeric"
-                      className="flex-1 px-4 py-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition disabled:bg-gray-100 disabled:text-gray-500 text-center text-3xl tracking-widest font-mono"
+                      value={signUpData.name}
+                      onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
+                      disabled={loading}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
                       required
-                      autoComplete="one-time-code"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Enter the 6-digit code from your text message
-                  </p>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-md"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>✅ Verify & Login</>
-                  )}
-                </button>
+                  <div className="space-y-2">
+                    <label htmlFor="signup-dob" className="block text-sm font-medium text-gray-700">
+                      Date of Birth
+                    </label>
+                    <div className="flex gap-2">
+                      <Calendar className="h-5 w-5 text-gray-400 mt-3" />
+                      <input
+                        id="signup-dob"
+                        type="date"
+                        value={signUpData.dateOfBirth}
+                        onChange={(e) => setSignUpData({ ...signUpData, dateOfBirth: e.target.value })}
+                        disabled={loading}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      You must be 21+ to use this service (U.S. federal minimum)
+                    </p>
+                  </div>
 
-                {/* Resend OTP */}
-                <div className="text-center space-y-3">
+                  <div className="space-y-2">
+                    <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <div className="flex gap-2">
+                      <Mail className="h-5 w-5 text-gray-400 mt-3" />
+                      <input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={signUpData.email}
+                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                        disabled={loading}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700">
+                      Password
+                    </label>
+                    <input
+                      id="signup-password"
+                      type="password"
+                      value={signUpData.password}
+                      onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                      disabled={loading}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
+                      required
+                    />
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={isLoading || resendTimer > 0}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 disabled:cursor-not-allowed font-medium transition"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2 pt-2"
                   >
-                    {resendTimer > 0 ? (
-                      <>⏱️ Resend OTP in {resendTimer}s</>
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
                     ) : (
-                      <>📤 Resend OTP</>
+                      'Create Account'
                     )}
                   </button>
+                </form>
+              )}
 
-                  {/* Back Button */}
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    disabled={isLoading}
-                    className="w-full text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 font-medium py-2 transition"
-                  >
-                    ← Change Phone Number
-                  </button>
-                </div>
-              </form>
-            )}
+              {/* OTP Tab */}
+              {activeTab === 'otp' && (
+                <form onSubmit={!otpSent ? handleSendOtp : handleVerifyOtp} className="space-y-4">
+                  {!otpSent ? (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor="otp-phone" className="block text-sm font-medium text-gray-700">
+                          Phone Number
+                        </label>
+                        <div className="flex gap-2">
+                          <Phone className="h-5 w-5 text-gray-400 mt-3" />
+                          <input
+                            id="otp-phone"
+                            type="tel"
+                            placeholder="+1 (555) 000-0000"
+                            value={otpData.phone}
+                            onChange={(e) => setOtpData({ ...otpData, phone: e.target.value })}
+                            disabled={loading}
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-100"
+                            required
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Enter your phone number to receive an OTP code
+                        </p>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Sending OTP...
+                          </>
+                        ) : (
+                          <>📱 Send OTP</>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor="otp-code" className="block text-sm font-medium text-gray-700">
+                          Verification Code
+                        </label>
+                        <p className="text-sm text-gray-600">
+                          Sent to <span className="font-semibold">{otpData.phone}</span>
+                        </p>
+                        <input
+                          id="otp-code"
+                          type="text"
+                          placeholder="000000"
+                          value={otpData.otp}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                            setOtpData({ ...otpData, otp: value })
+                          }}
+                          disabled={loading}
+                          maxLength={6}
+                          inputMode="numeric"
+                          className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition disabled:bg-gray-100 text-center text-3xl tracking-widest font-mono"
+                          required
+                        />
+                        <p className="text-xs text-gray-500">
+                          Enter the 6-digit code from your text message
+                        </p>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading || otpData.otp.length !== 6}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (
+                          <>✅ Verify & Login</>
+                        )}
+                      </button>
+
+                      <div className="flex gap-2 flex-col text-center space-y-2">
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          disabled={loading || resendTimer > 0}
+                          className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 font-medium transition"
+                        >
+                          {resendTimer > 0 ? (
+                            <>⏱️ Resend OTP in {resendTimer}s</>
+                          ) : (
+                            <>📤 Resend OTP</>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpSent(false)
+                            setOtpData({ phone: '', otp: '' })
+                            setError(null)
+                          }}
+                          disabled={loading}
+                          className="text-sm text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 font-medium transition"
+                        >
+                          ← Change Phone Number
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </form>
+              )}
+            </div>
 
             {/* Divider */}
             <div className="relative">
@@ -336,25 +579,70 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or use email</span>
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
 
-            {/* Email/Password Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-blue-800">
-                <span className="font-medium">💡 Email/Password Authentication</span>
-              </p>
-              <p className="text-xs text-blue-600 mt-2">
-                For development use, the OTP method via phone is recommended for bartenders.
-              </p>
+            {/* Social Login */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Google
+              </button>
+              <button
+                type="button"
+                className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Facebook
+              </button>
+              <button
+                type="button"
+                className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Apple
+              </button>
+              <button
+                type="button"
+                className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Instagram
+              </button>
+            </div>
+            <p className="text-xs text-center text-gray-500">
+              Social sign-in requires configuration in backend
+            </p>
+
+            {/* Debug Buttons */}
+            <div className="pt-4 border-t border-gray-200 space-y-2">
+              <button
+                type="button"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                🧪 Create Test User
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-900 transition font-medium text-xs"
+                >
+                  📊 Debug Info
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-900 transition font-medium text-xs"
+                >
+                  🗑️ Cleanup
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Security Info */}
+        {/* Security Footer */}
         <div className="mt-6 text-center text-xs text-gray-300 space-y-1">
-          <p>🔒 Secure OTP-based authentication</p>
+          <p>🔒 Secure authentication</p>
           <p>Your credentials are never stored</p>
         </div>
       </div>
