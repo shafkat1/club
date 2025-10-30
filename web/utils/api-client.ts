@@ -19,7 +19,7 @@ export class ApiClient {
   private refreshQueue: Array<() => void> = []
 
   constructor(config: ApiConfig = {}) {
-    const baseURL = config.baseURL || process.env.NEXT_PUBLIC_API_URL || '/api'
+    const baseURL = config.baseURL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
     this.client = axios.create({
       baseURL,

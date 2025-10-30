@@ -33,8 +33,8 @@ class OtpAuthService {
   constructor() {
     // Use the same base URL as apiClient
     this.apiBaseUrl = typeof window !== 'undefined'
-      ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api')
-      : 'http://localhost:3000/api'
+      ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+      : 'http://localhost:3001/api'
   }
 
   /**
